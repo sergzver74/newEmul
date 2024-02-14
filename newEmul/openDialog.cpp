@@ -126,6 +126,14 @@ OpenDialog::OpenDialog(std::string name, uint16_t x, uint16_t y, uint16_t w, uin
 	fl->create(10, 40);
 	fl->Visibled(true);
 
+	for (int i = 0; i < 16; i++) {
+		//addEvent(fl, 1, 15, 45 + (20 * i), 590, 20, 1, i);
+		addEvent(fl, 5, 15, 45 + (20 * i), 590, 20, 1, i);
+	}
+	numEventHexViewerClick = addEvent(fl, 1, 10, 40, 600, 340, 0, 0);
+	numEventHexViewerClickUp = addEvent(fl, 2, 10, 20, 600, 340, 0, 0);
+	numEventHexViewerScrol = addEvent(fl, 4, 591, 40, 16, 300, 0, 0);
+
 	updateWindow();
 
 }
@@ -156,7 +164,7 @@ bool OpenDialog::eventManager(SDL_Event event) {
 
 				if (x >= winEvents[i].x && x <= winEvents[i].x1 && y >= winEvents[i].y && y <= winEvents[i].y1) {
 					if (evType == 1) {
-						if (winEvents->guiElement == disks) {
+						if (winEvents[i].guiElement == disks) {
 							disks->OnClick(winEvents[i].param1, winEvents[i].param2);
 							if (winEvents[i].param1 == 0) {
 								if (disks->isOpen()) {
@@ -181,10 +189,16 @@ bool OpenDialog::eventManager(SDL_Event event) {
 
 								printf("Selected %s\n", selDsk.c_str());
 							}
+							break;
+						}
+						if (winEvents[i].guiElement == fl) {
+							winEvents[i].param1 = x;
+							winEvents[i].param2 = y;
+							winEvents[i].guiElement->OnClick(winEvents[i].param1, winEvents[i].param2);
 						}
 					}
 					if (evType == 4) {
-						if (winEvents->guiElement == disks) {
+						if (winEvents[i].guiElement == disks) {
 							disks->OnMove(winEvents[i].param1, winEvents[i].param2);
 						}
 					}

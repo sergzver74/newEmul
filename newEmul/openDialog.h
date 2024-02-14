@@ -25,6 +25,9 @@ private:
 
 	uint16_t moveEvents[16];
 	uint16_t clickEvents[16];
+	uint16_t numEventHexViewerClick;
+	uint16_t numEventHexViewerClickUp;
+	uint16_t numEventHexViewerScrol;
 
 };
 

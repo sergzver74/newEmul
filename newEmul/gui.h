@@ -376,6 +376,7 @@ private:
     float scrollPosition;
     float scrollAdd;
     int16_t ln;
+    uint8_t curSelect;
 
     tLabel* names[16];
     tLabel* sizeAneDir[16];

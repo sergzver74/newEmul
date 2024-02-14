@@ -1408,6 +1408,7 @@ tFileList::tFileList(Graph* gc, Font* fc, WIN32_FIND_DATAA* fls, uint32_t n, uin
     mx = 0;
     my = 0;
     scrollPressed = false;
+    curSelect = 255;
 }
 
 tFileList::~tFileList() {
@@ -1446,6 +1447,7 @@ tFileList::~tFileList() {
     mx = 0;
     my = 0;
     scrollPressed = false;
+    curSelect = 0;
 }
 
 string getFileTime(FILETIME* tm) {
@@ -1483,7 +1485,7 @@ void tFileList::create(int x, int y) {
         }
         sizeAneDir[i]->create(hx + 305, hy + (20 * i) + 25, 100, 20, cBLACK, tmp);
         sizeAneDir[i]->setparam(2, 1, 0, 0, 0);
-        date[i]->create(hx + 405, hy + (20 * i) + 25, 190, 20, cBLACK, getFileTime(&files[i].ftCreationTime));
+        date[i]->create(hx + 405, hy + (20 * i) + 25, 170, 20, cBLACK, getFileTime(&files[i].ftCreationTime));
         date[i]->setparam(2, 1, 0, 0, 0);
     }
     bUp->create(hx1 - 19, hy + 3, 16, 16, "");
@@ -1639,12 +1641,41 @@ void tFileList::OnKeyDown(uint32_t param1, uint32_t param2) {
 void tFileList::OnClick(uint32_t param1, uint32_t param2) {
     if (param1 >= hx1 - 19 && param1 <= hx1 - 3 && param2 >= hy + 3 && param2 <= hy + 19) bUp->OnClick(param1, param2);
     if (param1 >= hx1 - 19 && param1 <= hx1 - 3 && param2 >= hy1 - 19 && param2 <= hy1 - 3) bDown->OnClick(param1, param2);
+    
     int x, y, x1, y1;
     bMiddle->getPositionAndSize(&x, &y, &x1, &y1);
     if (param1 >= x && param1 <= x1 && param2 >= y && param2 <= y1) {
         mx = param1;
         my = param2;
         scrollPressed = true;
+    }
+
+    uint32_t cnt = 16;
+    if (count < 16) cnt = count;
+    for (int i = 0; i < cnt; i++) {
+        if (param1 >= hx + 5 && param1 <= hx + 570 && param2 >= hy + (20 * i) + 25 && param2 <= hy + (20 * i) + 45) {
+            if (i != curSelect) {
+                if (curSelect != 255) {
+                    names[curSelect]->setBkColor(cWHITE);
+                    names[curSelect]->changeColor(cBLACK);
+                    sizeAneDir[curSelect]->setBkColor(cWHITE);
+                    sizeAneDir[curSelect]->changeColor(cBLACK);
+                    date[curSelect]->setBkColor(cWHITE);
+                    date[curSelect]->changeColor(cBLACK);
+                }
+                
+                curSelect = i;
+                if (names[curSelect]->getText() != "") {
+                    names[curSelect]->setBkColor(0x0A246A);
+                    names[curSelect]->changeColor(cWHITE);
+                    sizeAneDir[curSelect]->setBkColor(0x0A246A);
+                    sizeAneDir[curSelect]->changeColor(cWHITE);
+                    date[curSelect]->setBkColor(0x0A246A);
+                    date[curSelect]->changeColor(cWHITE);
+                }
+            }
+
+        }
     }
 }
 
