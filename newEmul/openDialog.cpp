@@ -127,11 +127,11 @@ OpenDialog::OpenDialog(std::string name, uint16_t x, uint16_t y, uint16_t w, uin
 	fl->Visibled(true);
 
 	for (int i = 0; i < 16; i++) {
-		//addEvent(fl, 1, 15, 45 + (20 * i), 590, 20, 1, i);
+		flEvents[i] = addEvent(fl, 1, 15, 45 + (20 * i), 590, 20, 1, i);
 		addEvent(fl, 5, 15, 45 + (20 * i), 590, 20, 1, i);
 	}
-	numEventHexViewerClick = addEvent(fl, 1, 10, 40, 600, 340, 0, 0);
-	numEventHexViewerClickUp = addEvent(fl, 2, 10, 20, 600, 340, 0, 0);
+	numEventHexViewerClick = addEvent(fl, 1, 590, 40, 20, 340, 0, 0);
+	numEventHexViewerClickUp = addEvent(fl, 2, 590, 20, 20, 340, 0, 0);
 	numEventHexViewerScrol = addEvent(fl, 4, 591, 40, 16, 300, 0, 0);
 
 	updateWindow();
@@ -153,6 +153,7 @@ bool OpenDialog::eventManager(SDL_Event event) {
 	if (event.type == SDL_MOUSEBUTTONDOWN) evType = 1;
 	if (event.type == SDL_MOUSEBUTTONUP) evType = 2;
 	if (event.type == SDL_MOUSEMOTION) evType = 4;
+	if (event.type == SDL_MOUSEBUTTONUP && event.button.clicks == 2) evType = 5;
 
 	int i = 0;
 	for (i = 0; i < 512; i++) {
@@ -168,6 +169,7 @@ bool OpenDialog::eventManager(SDL_Event event) {
 							disks->OnClick(winEvents[i].param1, winEvents[i].param2);
 							if (winEvents[i].param1 == 0) {
 								if (disks->isOpen()) {
+									for (int i = 0; i < 16; i++) deleteEvent(flEvents[i]);
 									for (int i = 0; i < disks->getCount(); i++) {
 										moveEvents[i] = addEvent(disks, 4, 55, 28 + 10 + i * 25, 250, 25, 1, i);
 										clickEvents[i] = addEvent(disks, 1, 55, 28 + 10 + i * 25, 250, 25, 1, i);
@@ -178,6 +180,9 @@ bool OpenDialog::eventManager(SDL_Event event) {
 										deleteEvent(moveEvents[i]);
 										deleteEvent(clickEvents[i]);
 									}
+									for (int i = 0; i < 16; i++) {
+										flEvents[i] = addEvent(fl, 1, 15, 45 + (20 * i), 590, 20, 1, i);
+									}
 								}
 							}
 							if (winEvents[i].param1 == 1) {
@@ -185,6 +190,9 @@ bool OpenDialog::eventManager(SDL_Event event) {
 								for (int i = 0; i < disks->getCount(); i++) {
 									deleteEvent(moveEvents[i]);
 									deleteEvent(clickEvents[i]);
+								}
+								for (int i = 0; i < 16; i++) {
+									flEvents[i] = addEvent(fl, 1, 15, 45 + (20 * i), 590, 20, 1, i);
 								}
 
 								printf("Selected %s\n", selDsk.c_str());
@@ -200,6 +208,11 @@ bool OpenDialog::eventManager(SDL_Event event) {
 					if (evType == 4) {
 						if (winEvents[i].guiElement == disks) {
 							disks->OnMove(winEvents[i].param1, winEvents[i].param2);
+						}
+					}
+					if (evType == 5) {
+						if (winEvents[i].guiElement == fl) {
+							
 						}
 					}
 				}

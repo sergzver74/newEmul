@@ -415,6 +415,7 @@ public:
     std::string getText();
     void getPositionAndSize(int* x, int* y, int* x1, int* y1);
     void OnKeyDown(uint32_t param1, uint32_t param2);
+    void OnDblClick(uint32_t param1, uint32_t param2);
     void OnClick(uint32_t param1, uint32_t param2);
     void OnClickUp(uint32_t param1, uint32_t param2);
     void OnMove(uint32_t param1, uint32_t param2);

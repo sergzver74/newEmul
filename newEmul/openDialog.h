@@ -21,6 +21,7 @@ private:
 	tLabel* folderText;
 	tComboBox* disks;
 	tFileList* fl;
+	uint16_t flEvents[16];
 	string* diskNames;
 
 	uint16_t moveEvents[16];

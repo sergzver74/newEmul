@@ -1619,7 +1619,7 @@ void tFileList::setMemoryForTextElement(int i, int j, std::string sData) {
 }
 
 std::string tFileList::getText() {
-    return "";
+    return names[curSelect]->getText();
 }
 
 void tFileList::getPositionAndSize(int* x, int* y, int* x1, int* y1) {
@@ -1679,6 +1679,9 @@ void tFileList::OnClick(uint32_t param1, uint32_t param2) {
     }
 }
 
+void tFileList::OnDblClick(uint32_t param1, uint32_t param2) {
+
+}
 
 void tFileList::OnClickUp(uint32_t param1, uint32_t param2) {
     /*
