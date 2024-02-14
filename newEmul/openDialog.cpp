@@ -1,0 +1,199 @@
+#include "openDialog.h"
+#include <shlwapi.h>
+
+
+#pragma comment(lib, "shlwapi.lib")
+
+string* OpenDialog::getDisks() {
+	
+	string* names = new string[32];
+	for (int i = 0; i < 32; i++) names[i] = "";
+	
+	uint32_t disks = GetLogicalDrives();
+	printf("disks: %d\n", disks);
+
+	int i = 0;
+
+	char buf[255];
+	int sz = GetLogicalDriveStringsA(sizeof(buf), buf);
+	if (sz > 0)
+	{
+		char* p1 = buf;
+		char* p2;
+
+		char drive_label[256];
+		char drive_label1[256];
+		char drive_fat[30];
+		DWORD drive_sn;
+		DWORD drive_name_size = sizeof(drive_label);
+
+		while (*p1 != '\0' && (p2 = strchr(p1, '\0')) != NULL)
+		{
+
+			bool Flag = GetVolumeInformationA(p1,
+				drive_label,
+				sizeof(drive_label),
+				&drive_sn,
+				&drive_name_size,
+				NULL,
+				drive_fat,
+				sizeof(drive_fat)
+			);
+			if (Flag)
+			{
+				//if (drive_label[0]!=0) CharToOemBuffA(drive_label, drive_label1, 256); else CharToOemBuffA("Локальный диск", drive_label1, 256);
+
+				//names[i] = string(drive_label1) + " (" + string(p1,2) + ")";
+				if (drive_label[0] != 0) names[i] = string(drive_label) + " (" + string(p1, 2) + ")"; else names[i] = string("Локальный диск") + " (" + string(p1, 2) + ")";
+				printf("%s\n", names[i].c_str());
+				i++;
+			}
+
+			p1 = p2 + 1;
+		}
+	}
+	return names;
+}
+
+string OpenDialog::GetThisPath()
+{
+	char dest[MAX_PATH];
+
+	DWORD length = GetModuleFileNameA(NULL, dest, MAX_PATH);
+	PathRemoveFileSpecA(dest);
+	return string(dest);
+}
+
+WIN32_FIND_DATAA* getFilesList(string path, uint32_t *n) {
+	WIN32_FIND_DATAA *fd;
+	fd = new WIN32_FIND_DATAA[1024];
+	int i = 0;
+	HANDLE hFind = FindFirstFileA(path.c_str(), &fd[i]);
+	if (hFind != INVALID_HANDLE_VALUE)
+	{
+		do
+		{
+			if (fd[i].dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+				printf("  %s   <DIR>\n", fd[i].cFileName);
+			}
+			else {
+				printf("  %s   %d bytes\n", fd[i].cFileName, fd[i].nFileSizeLow);
+			}
+			i++;
+		} while (FindNextFileA(hFind, &fd[i]));
+		FindClose(hFind);
+	}
+	*n = i;
+	return fd;
+}
+
+
+OpenDialog::OpenDialog(std::string name, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ev) : Window(name, x, y, w, h, ev) {
+	diskNames = getDisks();
+	string path = GetThisPath();
+	printf("%s\n", path.c_str());
+	uint32_t n = 0;
+	WIN32_FIND_DATAA* files = getFilesList(path + "\\*.*", &n);
+
+	string dsk = "";
+	dsk += path[0];
+	dsk += path[1];
+
+	uint16_t indx = 0;
+	while (diskNames[indx] != "") {
+		string dsk2 = "";
+		dsk2 += diskNames[indx][diskNames[indx].length()-3];
+		dsk2 += diskNames[indx][diskNames[indx].length() - 2];
+		if (dsk == dsk2) break;
+		indx++;
+	}
+
+
+	folderText = new tLabel(gContext, fContext);
+	folderText->create(10, 5, 50, 20, cBLACK, "Диск:");
+	folderText->setparam(2, 1, 0, 0, 0);
+	folderText->Visibled(true);
+
+	disks = new tComboBox(gContext, fContext, ev);
+	disks->create(50, 5, 250, 22, 2, 1, diskNames, indx);
+	disks->Visibled(true);
+	addEvent(disks, 1, 50, 5, 250, 22, 0, 0);
+
+	for (int i = 0; i < 16; i++) moveEvents[i] = 0;
+	for (int i = 0; i < 16; i++) clickEvents[i] = 0;
+
+	fl = new tFileList(gContext, fContext, files, n, winID);
+	fl->create(10, 40);
+	fl->Visibled(true);
+
+	updateWindow();
+
+}
+
+OpenDialog::~OpenDialog() {
+	printf("Destroy OpenDialog window\n");
+	delete disks;
+	delete folderText;
+	delete[] diskNames;
+	for (int i = 0; i < 16; i++) moveEvents[i] = 0;
+	for (int i = 0; i < 16; i++) clickEvents[i] = 0;
+}
+
+bool OpenDialog::eventManager(SDL_Event event) {
+
+	uint32_t evType = 0;
+	if (event.type == SDL_MOUSEBUTTONDOWN) evType = 1;
+	if (event.type == SDL_MOUSEBUTTONUP) evType = 2;
+	if (event.type == SDL_MOUSEMOTION) evType = 4;
+
+	int i = 0;
+	for (i = 0; i < 512; i++) {
+		if (winEvents[i].guiElement != NULL) {
+			if (winEvents[i].evType == evType) {
+
+				int32_t x, y;
+				SDL_GetMouseState(&x, &y);
+
+				if (x >= winEvents[i].x && x <= winEvents[i].x1 && y >= winEvents[i].y && y <= winEvents[i].y1) {
+					if (evType == 1) {
+						if (winEvents->guiElement == disks) {
+							disks->OnClick(winEvents[i].param1, winEvents[i].param2);
+							if (winEvents[i].param1 == 0) {
+								if (disks->isOpen()) {
+									for (int i = 0; i < disks->getCount(); i++) {
+										moveEvents[i] = addEvent(disks, 4, 55, 28 + 10 + i * 25, 250, 25, 1, i);
+										clickEvents[i] = addEvent(disks, 1, 55, 28 + 10 + i * 25, 250, 25, 1, i);
+									}
+								}
+								else {
+									for (int i = 0; i < disks->getCount(); i++) {
+										deleteEvent(moveEvents[i]);
+										deleteEvent(clickEvents[i]);
+									}
+								}
+							}
+							if (winEvents[i].param1 == 1) {
+								string selDsk = disks->getText();
+								for (int i = 0; i < disks->getCount(); i++) {
+									deleteEvent(moveEvents[i]);
+									deleteEvent(clickEvents[i]);
+								}
+
+								printf("Selected %s\n", selDsk.c_str());
+							}
+						}
+					}
+					if (evType == 4) {
+						if (winEvents->guiElement == disks) {
+							disks->OnMove(winEvents[i].param1, winEvents[i].param2);
+						}
+					}
+				}
+			}
+		}
+	}
+
+
+	updateWindow();
+	return false;
+}
