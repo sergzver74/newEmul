@@ -84,6 +84,7 @@ WIN32_FIND_DATAA* getFilesList(string path, uint32_t *n) {
 		FindClose(hFind);
 	}
 	*n = i;
+	sort
 	return fd;
 }
 
@@ -188,7 +189,7 @@ bool OpenDialog::eventManager(SDL_Event event) {
 								}
 							}
 							if (winEvents[i].param1 == 1) {
-								string selDsk = disks->getText();
+								string selDisk = disks->getText();
 								for (int i = 0; i < disks->getCount(); i++) {
 									deleteEvent(moveEvents[i]);
 									deleteEvent(clickEvents[i]);
@@ -197,7 +198,36 @@ bool OpenDialog::eventManager(SDL_Event event) {
 									flEvents[i] = addEvent(fl, 1, 15, 45 + (20 * i), 590, 20, 1, i);
 								}
 
-								printf("Selected %s\n", selDsk.c_str());
+								printf("Selected %s\n", selDisk.c_str());
+
+								uint32_t k = selDisk.length();
+								path = selDisk.substr(k-3, 2);
+								printf("new path: %s\n", path.c_str());
+
+								uint32_t n = 0;
+								//delete[] files;
+								files = getFilesList(path + "\\*.*", &n);
+								for (int i = 0; i < 16; i++) {
+									deleteEvent(flEvents[i]);
+									deleteEvent(flEvents1[i]);
+								}
+								deleteEvent(numEventHexViewerClick);
+								deleteEvent(numEventHexViewerClickUp);
+								deleteEvent(numEventHexViewerScrol);
+								fl->Visibled(false);
+								delete fl;
+								fl = new tFileList(gContext, fContext, files, n, winID);
+								fl->create(10, 40);
+								fl->Visibled(true);
+
+								for (int i = 0; i < 16; i++) {
+									flEvents[i] = addEvent(fl, 1, 15, 45 + (20 * i), 590, 20, 1, i);
+									flEvents1[i] = addEvent(fl, 5, 15, 45 + (20 * i), 590, 20, 1, i);
+								}
+								numEventHexViewerClick = addEvent(fl, 1, 590, 40, 20, 340, 0, 0);
+								numEventHexViewerClickUp = addEvent(fl, 2, 590, 20, 20, 340, 0, 0);
+								numEventHexViewerScrol = addEvent(fl, 4, 591, 40, 16, 300, 0, 0);
+
 							}
 							break;
 						}
