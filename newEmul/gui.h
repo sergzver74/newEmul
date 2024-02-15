@@ -377,6 +377,7 @@ private:
     float scrollAdd;
     int16_t ln;
     uint8_t curSelect;
+    uint16_t startSelect;
 
     tLabel* names[16];
     tLabel* sizeAneDir[16];
@@ -413,6 +414,9 @@ public:
     std::string getTextElement(int i, int j);
     void setMemoryForTextElement(int i, int j, std::string sData);
     std::string getText();
+    std::string getSelectedFileName();
+    std::string getSelectedFileSize();
+    uint16_t getSelectedIndex();
     void getPositionAndSize(int* x, int* y, int* x1, int* y1);
     void OnKeyDown(uint32_t param1, uint32_t param2);
     void OnDblClick(uint32_t param1, uint32_t param2);

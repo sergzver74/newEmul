@@ -1389,6 +1389,7 @@ tFileList::tFileList(Graph* gc, Font* fc, WIN32_FIND_DATAA* fls, uint32_t n, uin
     enable = false;
     scrollPosition = 0;
     scrollAdd = 0;
+    startSelect = 0;
     ln = 0;
     //memPointer = memory->getMemoryPointer(isROM, &startMemAddr, &maxMemAddr);
     //curMemAddr = 0;
@@ -1619,7 +1620,26 @@ void tFileList::setMemoryForTextElement(int i, int j, std::string sData) {
 }
 
 std::string tFileList::getText() {
-    return names[curSelect]->getText();
+    //return names[curSelect]->getText();
+    return "";
+}
+
+uint16_t tFileList::getSelectedIndex() {
+    return startSelect + curSelect;
+}
+
+std::string tFileList::getSelectedFileName() {
+    if (curSelect != 255) {
+        return names[curSelect]->getText();
+    }
+    else return"";
+}
+
+std::string tFileList::getSelectedFileSize() {
+    if (curSelect != 255) {
+        return sizeAneDir[curSelect]->getText();
+    }
+    else return "";
 }
 
 void tFileList::getPositionAndSize(int* x, int* y, int* x1, int* y1) {

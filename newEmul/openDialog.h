@@ -22,7 +22,12 @@ private:
 	tComboBox* disks;
 	tFileList* fl;
 	uint16_t flEvents[16];
+	uint16_t flEvents1[16];
 	string* diskNames;
+	bool selected;
+	string fullPath;
+	string path;
+	WIN32_FIND_DATAA* files;
 
 	uint16_t moveEvents[16];
 	uint16_t clickEvents[16];
