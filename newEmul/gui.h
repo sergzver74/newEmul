@@ -395,6 +395,7 @@ private:
     Font* fontContext;
     WIN32_FIND_DATAA* files;
     uint32_t count;
+    uint32_t selectedItem;
 
     uint16_t mx;
     uint16_t my;
@@ -406,13 +407,10 @@ public:
     tFileList(Graph* gc, Font* fc, WIN32_FIND_DATAA* fls, uint32_t n, uint32_t winId);
     ~tFileList();
     void create(int x, int y);
-    uint16_t getLebgth();
     void Visibled(bool vis);
     void updateData();
     void Enabled(bool en);
     bool getFocus();
-    std::string getTextElement(int i, int j);
-    void setMemoryForTextElement(int i, int j, std::string sData);
     std::string getText();
     std::string getSelectedFileName();
     std::string getSelectedFileSize();

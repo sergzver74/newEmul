@@ -64,16 +64,16 @@ void openRom() {
 	printf("Selected OpenROM\n");
 
 	uint32_t openWindowWidth = 640;
-	uint32_t openWindowHeight = 400;
-	openDlg = new OpenDialog("Open ROM", 200, 200, openWindowWidth, openWindowHeight, myEventType);
+	uint32_t openWindowHeight = 450;
+	openDlg = new OpenDialog("Open ROM", 200, 200, openWindowWidth, openWindowHeight, myEventType, "*.rom");
 	wins[2] = openDlg;
 }
 
 void openWav() {
 	printf("Selected openWav\n");
 	uint32_t openWindowWidth = 640;
-	uint32_t openWindowHeight = 400;
-	openDlg = new OpenDialog("Open WAV", 200, 200, openWindowWidth, openWindowHeight, myEventType);
+	uint32_t openWindowHeight = 450;
+	openDlg = new OpenDialog("Open WAV", 200, 200, openWindowWidth, openWindowHeight, myEventType, "*.wav");
 	wins[2] = openDlg;
 }
 

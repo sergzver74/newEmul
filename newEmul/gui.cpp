@@ -1390,6 +1390,7 @@ tFileList::tFileList(Graph* gc, Font* fc, WIN32_FIND_DATAA* fls, uint32_t n, uin
     scrollPosition = 0;
     scrollAdd = 0;
     startSelect = 0;
+    selectedItem = 0;
     ln = 0;
     //memPointer = memory->getMemoryPointer(isROM, &startMemAddr, &maxMemAddr);
     //curMemAddr = 0;
@@ -1465,7 +1466,7 @@ void tFileList::create(int x, int y) {
     hx = x;
     hy = y;
     dx = 600;
-    dy = 340;
+    dy = 350;
     hx1 = hx + dx;
     hy1 = hy + dy;
     
@@ -1493,8 +1494,8 @@ void tFileList::create(int x, int y) {
     bUp->setSpecialButtonType(tButtonUp);
     bDown->create(hx1 - 19, hy1 - 19, 16, 16, "");
     bDown->setSpecialButtonType(tButtonDown);
-    ln = count / 16 + 5;// -32;
-    ln = (hy1 - 19 - hy) - ln;
+    ln = count;// -32;
+    ln = (hy1 - 19 - hy - 5) - ln;
     float tmp = (float)ln * (float)(-1.0);
     if (ln < 8) {
         ln = 8;
@@ -1572,21 +1573,36 @@ void tFileList::Visibled(bool vis) {
 }
 
 void tFileList::update() {
-    /*
-    for (int i = 0; i < 16; i++) addrs[i]->changecaption(decToHexWord(curMemAddr + i * 16));
-    for (int i = 0; i < 16; i++)
-        for (int j = 0; j < 16; j++) {
-            datas[i][j]->changeColor(cBLACK);
-            datas[i][j]->changecaption(decToHexByte(memPointer[curMemAddr + i * 16 + j]));
-        }
+    
     for (int i = 0; i < 16; i++) {
-        std::string txt = "";
-        for (int j = 0; j < 16; j++) {
-            if (memPointer[curMemAddr + i * 16 + j] < 0x20) txt += "."; else txt += memPointer[curMemAddr + i * 16 + j];
+        names[i]->changecaption(files[startSelect + i].cFileName);
+        string tmp = "";
+        if (files[startSelect + i].dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) tmp = "DIR"; else {
+            char buf[20];
+            sprintf_s(buf, 20, "%d", files[startSelect + i].nFileSizeLow);
+            tmp = string(buf);
         }
-        stringDatas[i]->changecaption(txt);
+        sizeAneDir[i]->changecaption(tmp);
+        date[i]->changecaption(getFileTime(&files[startSelect + i].ftCreationTime));
+        if (startSelect + i == selectedItem) {
+            names[i]->setBkColor(0x0A246A);
+            names[i]->changeColor(cWHITE);
+            sizeAneDir[i]->setBkColor(0x0A246A);
+            sizeAneDir[i]->changeColor(cWHITE);
+            date[i]->setBkColor(0x0A246A);
+            date[i]->changeColor(cWHITE);
+        }
+        else {
+            names[i]->setBkColor(cWHITE);
+            names[i]->changeColor(cBLACK);
+            sizeAneDir[i]->setBkColor(cWHITE);
+            sizeAneDir[i]->changeColor(cBLACK);
+            date[i]->setBkColor(cWHITE);
+            date[i]->changeColor(cBLACK);
+        }
     }
-    */
+
+    
 }
 
 void tFileList::updateData() {
@@ -1610,17 +1626,7 @@ void tFileList::updateData() {
     */
 }
 
-std::string tFileList::getTextElement(int i, int j) {
-    return "";// datas[i][j]->getText();
-}
-
-void tFileList::setMemoryForTextElement(int i, int j, std::string sData) {
-    //uint8_t data = hexToDec(sData);
-    //memPointer[curMemAddr + i * 16 + j] = data;
-}
-
 std::string tFileList::getText() {
-    //return names[curSelect]->getText();
     return "";
 }
 
@@ -1675,26 +1681,10 @@ void tFileList::OnClick(uint32_t param1, uint32_t param2) {
     for (int i = 0; i < cnt; i++) {
         if (param1 >= hx + 5 && param1 <= hx + 570 && param2 >= hy + (20 * i) + 25 && param2 <= hy + (20 * i) + 45) {
             if (i != curSelect) {
-                if (curSelect != 255) {
-                    names[curSelect]->setBkColor(cWHITE);
-                    names[curSelect]->changeColor(cBLACK);
-                    sizeAneDir[curSelect]->setBkColor(cWHITE);
-                    sizeAneDir[curSelect]->changeColor(cBLACK);
-                    date[curSelect]->setBkColor(cWHITE);
-                    date[curSelect]->changeColor(cBLACK);
-                }
-                
-                curSelect = i;
-                if (names[curSelect]->getText() != "") {
-                    names[curSelect]->setBkColor(0x0A246A);
-                    names[curSelect]->changeColor(cWHITE);
-                    sizeAneDir[curSelect]->setBkColor(0x0A246A);
-                    sizeAneDir[curSelect]->changeColor(cWHITE);
-                    date[curSelect]->setBkColor(0x0A246A);
-                    date[curSelect]->changeColor(cWHITE);
-                }
-            }
-
+                 curSelect = i;
+                selectedItem = startSelect + i;
+                update();
+             }
         }
     }
 }
@@ -1704,11 +1694,11 @@ void tFileList::OnDblClick(uint32_t param1, uint32_t param2) {
 }
 
 void tFileList::OnClickUp(uint32_t param1, uint32_t param2) {
-    /*
+    
     if (param1 >= hx1 - 19 && param1 <= hx1 - 3 && param2 >= hy + 3 && param2 <= hy + 19) {
         bUp->OnClickUp(param1, param2);
-        if (curMemAddr > 0) {
-            curMemAddr -= 16;
+        if (startSelect > 0) {
+            startSelect--;
             scrollPosition -= scrollAdd;
             bMiddle->changePosition(hx1 - 19, (int)round(scrollPosition));
             update();
@@ -1716,20 +1706,21 @@ void tFileList::OnClickUp(uint32_t param1, uint32_t param2) {
     }
     if (param1 >= hx1 - 19 && param1 <= hx1 - 3 && param2 >= hy1 - 19 && param2 <= hy1 - 3) {
         bDown->OnClickUp(param1, param2);
-        if (curMemAddr < (maxMemAddr - 256)) {
-            curMemAddr += 16;
-            scrollPosition += scrollAdd;
-            bMiddle->changePosition(hx1 - 19, (int)round(scrollPosition));
-            update();
+        if (count > 16) {
+            if (startSelect < (count - 16)) {
+                startSelect++;
+                scrollPosition += scrollAdd;
+                bMiddle->changePosition(hx1 - 19, (int)round(scrollPosition));
+                update();
+            }
         }
     }
     scrollPressed = false;
-    */
+    
 }
 
 
 void tFileList::OnMove(uint32_t param1, uint32_t param2) {
-    /*
     if (scrollPressed) {
         if (param2 != my) {
             if (param2 > my) {
@@ -1737,10 +1728,12 @@ void tFileList::OnMove(uint32_t param1, uint32_t param2) {
                 scrollPosition += (param2 - my);
                 float step = (scrollPosition - oldSP) / scrollAdd;
                 if (scrollPosition + ln <= hy1 - 20) {
-                    curMemAddr += (16 * (int)round(step));
+                    //curMemAddr += (16 * (int)round(step));
+                    startSelect += (int)round(step);
                 }
                 else {
-                    curMemAddr = maxMemAddr - 256;
+                    //curMemAddr = maxMemAddr - 256;
+                    startSelect = count - 16;
                     scrollPosition = hy1 - 20 - ln;
                 }
                 bMiddle->changePosition(hx1 - 19, scrollPosition);
@@ -1751,11 +1744,13 @@ void tFileList::OnMove(uint32_t param1, uint32_t param2) {
                 scrollPosition -= (my - param2);
                 float step = (oldSP - scrollPosition) / scrollAdd;
                 if (scrollPosition < hy + 20) {
-                    curMemAddr = 0;
+                    //curMemAddr = 0;
+                    startSelect = 0;
                     scrollPosition = hy + 20;
                 }
                 else {
-                    curMemAddr -= ((int)round(step) * 16);
+                    //curMemAddr -= ((int)round(step) * 16);
+                    startSelect -= (int)round(step);
                 }
                 bMiddle->changePosition(hx1 - 19, scrollPosition);
                 update();
@@ -1764,7 +1759,6 @@ void tFileList::OnMove(uint32_t param1, uint32_t param2) {
             my = param2;
         }
     }
-    */
 }
 
 

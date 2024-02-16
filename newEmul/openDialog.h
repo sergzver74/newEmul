@@ -8,7 +8,7 @@
 
 class OpenDialog : public Window {
 public:
-	OpenDialog(std::string name, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ev);
+	OpenDialog(std::string name, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ev, std::string msk);
 	virtual ~OpenDialog();
 	bool eventManager(SDL_Event event);
 
@@ -19,6 +19,11 @@ private:
 	string GetThisPath();
 
 	tLabel* folderText;
+	tLabel* nameText;
+	tEdit* fileName;
+	tComboBox* mask;
+	tButton* open;
+	tButton* cancel;
 	tComboBox* disks;
 	tFileList* fl;
 	uint16_t flEvents[16];
@@ -28,6 +33,8 @@ private:
 	string fullPath;
 	string path;
 	WIN32_FIND_DATAA* files;
+	string currentMask;
+	string* masks;
 
 	uint16_t moveEvents[16];
 	uint16_t clickEvents[16];

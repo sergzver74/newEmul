@@ -64,37 +64,81 @@ string OpenDialog::GetThisPath()
 	return string(dest);
 }
 
+void sort(WIN32_FIND_DATAA* fd, uint16_t n) {
+	if (n > 1)
+	{
+		for (int i = 0; i < n - 1; i++) {
+			int min = i;
+			for (int j = i + 1; j < n; j++) {
+				if (strcmp(fd[j].cFileName, fd[min].cFileName) < 0)
+					min = j;
+			}
+			if (min != i)
+			{
+				WIN32_FIND_DATAA f = fd[i];
+				fd[i] = fd[min];
+				fd[min] = f;
+			}
+		}
+	}
+}
+
 WIN32_FIND_DATAA* getFilesList(string path, uint32_t *n) {
-	WIN32_FIND_DATAA *fd;
+	WIN32_FIND_DATAA f;
+	WIN32_FIND_DATAA* fd;
+	WIN32_FIND_DATAA* fd1;
 	fd = new WIN32_FIND_DATAA[1024];
+	fd1 = new WIN32_FIND_DATAA[1024];
 	int i = 0;
-	HANDLE hFind = FindFirstFileA(path.c_str(), &fd[i]);
+	int k = 0;
+	HANDLE hFind = FindFirstFileA(path.c_str(), &f);
 	if (hFind != INVALID_HANDLE_VALUE)
 	{
 		do
 		{
-			if (fd[i].dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-				printf("  %s   <DIR>\n", fd[i].cFileName);
+			if (f.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+				printf("  %s   <DIR>\n", f.cFileName);
+				fd[i] = f;
+				i++;
 			}
 			else {
-				printf("  %s   %d bytes\n", fd[i].cFileName, fd[i].nFileSizeLow);
+				printf("  %s   %d bytes\n", f.cFileName, f.nFileSizeLow);
+				fd1[k] = f;
+				k++;
 			}
-			i++;
-		} while (FindNextFileA(hFind, &fd[i]));
+		} while (FindNextFileA(hFind, &f));
 		FindClose(hFind);
 	}
-	*n = i;
-	sort
-	return fd;
+
+	sort(fd, i);
+	sort(fd1, k);
+
+	WIN32_FIND_DATAA* fdNew;
+	fdNew = new WIN32_FIND_DATAA[i + k];
+	for (int l = 0; l < i; l++) fdNew[l] = fd[l];
+	for (int l = 0; l < k; l++) fdNew[i + l] = fd1[l];
+	delete[] fd1;
+	delete[] fd;
+
+	*n = i + k;
+	return fdNew;
 }
 
 
-OpenDialog::OpenDialog(std::string name, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ev) : Window(name, x, y, w, h, ev) {
+OpenDialog::OpenDialog(std::string name, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ev, std::string msk) : Window(name, x, y, w, h, ev) {
+	
+	masks = new string[3];
+	masks[0] = msk;
+	masks[1] = "*.*";
+	masks[2] = "";
+	currentMask = masks[0];
+
+	
 	diskNames = getDisks();
 	path = GetThisPath();
 	printf("%s\n", path.c_str());
 	uint32_t n = 0;
-	WIN32_FIND_DATAA* files = getFilesList(path + "\\*.*", &n);
+	WIN32_FIND_DATAA* files = getFilesList(path + "\\" + currentMask, &n);
 
 	string dsk = "";
 	dsk += path[0];
@@ -130,12 +174,30 @@ OpenDialog::OpenDialog(std::string name, uint16_t x, uint16_t y, uint16_t w, uin
 	fl->Visibled(true);
 
 	for (int i = 0; i < 16; i++) {
-		flEvents[i] = addEvent(fl, 1, 15, 45 + (20 * i), 590, 20, 1, i);
-		flEvents1[i] = addEvent(fl, 5, 15, 45 + (20 * i), 590, 20, 1, i);
+		flEvents[i] = addEvent(fl, 1, 15, 65 + (20 * i), 570, 20, 1, i);
+		flEvents1[i] = addEvent(fl, 5, 15, 65 + (20 * i), 570, 20, 1, i);
 	}
-	numEventHexViewerClick = addEvent(fl, 1, 590, 40, 20, 340, 0, 0);
-	numEventHexViewerClickUp = addEvent(fl, 2, 590, 20, 20, 340, 0, 0);
-	numEventHexViewerScrol = addEvent(fl, 4, 591, 40, 16, 300, 0, 0);
+	numEventHexViewerClick = addEvent(fl, 1, 590, 40, 20, 350, 0, 0);
+	numEventHexViewerClickUp = addEvent(fl, 2, 590, 40, 20, 350, 0, 0);
+	numEventHexViewerScrol = addEvent(fl, 4, 591, 40, 16, 310, 0, 0);
+
+	nameText = new tLabel(gContext, fContext);
+	nameText->create(10, 400, 80, 20, cBLACK, "ָלÿ פאיכא:");
+	nameText->setparam(2, 1, 0, 0, 0);
+	nameText->Visibled(true);
+
+	fileName = new tEdit(gContext, fContext, winID, userEventType);
+	fileName->create(90, 400, 350, 20, 2, 1, "");
+	fileName->Visibled(true);
+
+	addEvent(fileName, 2, 90, 400, 350, 20, 0, 0);
+	addEvent(fileName, 3, 0, 0, 0, 0, 0, 0);
+	addEvent(fileName, userEventType, 0, 0, 0, 0, 0, 0);
+
+	mask = new tComboBox(gContext, fContext, ev);
+	mask->create(460, 400, 150, 22, 2, 1, masks, 0);
+	mask->Visibled(true);
+	addEvent(mask, 1, 50, 5, 250, 22, 0, 0);
 
 	updateWindow();
 
@@ -143,6 +205,10 @@ OpenDialog::OpenDialog(std::string name, uint16_t x, uint16_t y, uint16_t w, uin
 
 OpenDialog::~OpenDialog() {
 	printf("Destroy OpenDialog window\n");
+	delete mask;
+	delete fileName;
+	delete nameText;
+	delete fl;
 	delete disks;
 	delete folderText;
 	delete[] diskNames;
@@ -184,7 +250,7 @@ bool OpenDialog::eventManager(SDL_Event event) {
 										deleteEvent(clickEvents[i]);
 									}
 									for (int i = 0; i < 16; i++) {
-										flEvents[i] = addEvent(fl, 1, 15, 45 + (20 * i), 590, 20, 1, i);
+										flEvents[i] = addEvent(fl, 1, 15, 65 + (20 * i), 570, 20, 1, i);
 									}
 								}
 							}
@@ -195,7 +261,7 @@ bool OpenDialog::eventManager(SDL_Event event) {
 									deleteEvent(clickEvents[i]);
 								}
 								for (int i = 0; i < 16; i++) {
-									flEvents[i] = addEvent(fl, 1, 15, 45 + (20 * i), 590, 20, 1, i);
+									flEvents[i] = addEvent(fl, 1, 15, 65 + (20 * i), 570, 20, 1, i);
 								}
 
 								printf("Selected %s\n", selDisk.c_str());
@@ -206,7 +272,7 @@ bool OpenDialog::eventManager(SDL_Event event) {
 
 								uint32_t n = 0;
 								//delete[] files;
-								files = getFilesList(path + "\\*.*", &n);
+								files = getFilesList(path + "\\" + currentMask, &n);
 								for (int i = 0; i < 16; i++) {
 									deleteEvent(flEvents[i]);
 									deleteEvent(flEvents1[i]);
@@ -221,11 +287,11 @@ bool OpenDialog::eventManager(SDL_Event event) {
 								fl->Visibled(true);
 
 								for (int i = 0; i < 16; i++) {
-									flEvents[i] = addEvent(fl, 1, 15, 45 + (20 * i), 590, 20, 1, i);
-									flEvents1[i] = addEvent(fl, 5, 15, 45 + (20 * i), 590, 20, 1, i);
+									flEvents[i] = addEvent(fl, 1, 15, 65 + (20 * i), 570, 20, 1, i);
+									flEvents1[i] = addEvent(fl, 5, 15, 65 + (20 * i), 570, 20, 1, i);
 								}
 								numEventHexViewerClick = addEvent(fl, 1, 590, 40, 20, 340, 0, 0);
-								numEventHexViewerClickUp = addEvent(fl, 2, 590, 20, 20, 340, 0, 0);
+								numEventHexViewerClickUp = addEvent(fl, 2, 590, 40, 20, 340, 0, 0);
 								numEventHexViewerScrol = addEvent(fl, 4, 591, 40, 16, 300, 0, 0);
 
 							}
@@ -237,9 +303,19 @@ bool OpenDialog::eventManager(SDL_Event event) {
 							winEvents[i].guiElement->OnClick(winEvents[i].param1, winEvents[i].param2);
 						}
 					}
+					if (evType == 2) {
+						winEvents[i].param1 = x;
+						winEvents[i].param2 = y;
+						winEvents[i].guiElement->OnClickUp(winEvents[i].param1, winEvents[i].param2);
+					}
 					if (evType == 4) {
 						if (winEvents[i].guiElement == disks) {
 							disks->OnMove(winEvents[i].param1, winEvents[i].param2);
+						}
+						if (winEvents[i].guiElement == fl) {
+							winEvents[i].param1 = x;
+							winEvents[i].param2 = y;
+							winEvents[i].guiElement->OnMove(winEvents[i].param1, winEvents[i].param2);
 						}
 					}
 					if (evType == 5) {
@@ -269,7 +345,7 @@ bool OpenDialog::eventManager(SDL_Event event) {
 								if (selName != ".") {
 									uint32_t n = 0;
 									//delete[] files;
-									files = getFilesList(path + "\\*.*", &n);
+									files = getFilesList(path + "\\" + currentMask, &n);
 									for (int i = 0; i < 16; i++) {
 										deleteEvent(flEvents[i]);
 										deleteEvent(flEvents1[i]);
@@ -284,11 +360,11 @@ bool OpenDialog::eventManager(SDL_Event event) {
 									fl->Visibled(true);
 
 									for (int i = 0; i < 16; i++) {
-										flEvents[i] = addEvent(fl, 1, 15, 45 + (20 * i), 590, 20, 1, i);
-										flEvents1[i] = addEvent(fl, 5, 15, 45 + (20 * i), 590, 20, 1, i);
+										flEvents[i] = addEvent(fl, 1, 15, 65 + (20 * i), 570, 20, 1, i);
+										flEvents1[i] = addEvent(fl, 5, 15, 65 + (20 * i), 570, 20, 1, i);
 									}
 									numEventHexViewerClick = addEvent(fl, 1, 590, 40, 20, 340, 0, 0);
-									numEventHexViewerClickUp = addEvent(fl, 2, 590, 20, 20, 340, 0, 0);
+									numEventHexViewerClickUp = addEvent(fl, 2, 590, 40, 20, 340, 0, 0);
 									numEventHexViewerScrol = addEvent(fl, 4, 591, 40, 16, 300, 0, 0);
 								}
 							}
