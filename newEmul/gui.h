@@ -195,6 +195,7 @@ public:
     void create(int x, int y, int dx, int dy, int fid, int sz, std::string text);
     void Visibled(bool vis);
     void Enabled(bool en);
+    void setText(std::string txt);
     std::string getText();
     void getPositionAndSize(int* x, int* y, int* x1, int* y1);
     void setMaxSymbols(uint16_t n);

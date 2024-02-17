@@ -656,6 +656,7 @@ void tEdit::Visibled(bool vis) {
             editText->Visibled(true);
         }
         else {
+            editText->Visibled(false);
             if (lbl != NULL)
             {
                 grContext->putImage(ex, ey, lbl);
@@ -668,6 +669,18 @@ void tEdit::Visibled(bool vis) {
 
 std::string tEdit::getText() {
     return txt;
+}
+
+void tEdit::setText(std::string txt) {
+    if (!visible) {
+        this->txt = txt;
+    }
+    else {
+        Visibled(false);
+        this->txt = txt;
+        editText->changecaption(txt);
+        Visibled(true);
+    }
 }
 
 void tEdit::setMaxSymbols(uint16_t n) {
@@ -1631,7 +1644,7 @@ std::string tFileList::getText() {
 }
 
 uint16_t tFileList::getSelectedIndex() {
-    return startSelect + curSelect;
+    return selectedItem;
 }
 
 std::string tFileList::getSelectedFileName() {

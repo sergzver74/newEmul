@@ -63,16 +63,16 @@ void updateMainWindow(SDL_Renderer* renderer, SDL_Surface* surface) {
 void openRom() {
 	printf("Selected OpenROM\n");
 
-	uint32_t openWindowWidth = 640;
-	uint32_t openWindowHeight = 450;
+	uint32_t openWindowWidth = 620;
+	uint32_t openWindowHeight = 500;
 	openDlg = new OpenDialog("Open ROM", 200, 200, openWindowWidth, openWindowHeight, myEventType, "*.rom");
 	wins[2] = openDlg;
 }
 
 void openWav() {
 	printf("Selected openWav\n");
-	uint32_t openWindowWidth = 640;
-	uint32_t openWindowHeight = 450;
+	uint32_t openWindowWidth = 620;
+	uint32_t openWindowHeight = 500;
 	openDlg = new OpenDialog("Open WAV", 200, 200, openWindowWidth, openWindowHeight, myEventType, "*.wav");
 	wins[2] = openDlg;
 }
@@ -208,6 +208,23 @@ int main(int argc, char* args[]) {
 						if (wins[i]) {
 							if (event.window.windowID == wins[i]->getWindowID()) {
 								eventRes = wins[i]->eventManager(event);
+								if (eventRes) {
+									if (i == 2) {
+										uint8_t res = openDlg->getresultCode();
+										if (res == 2) {
+											delete wins[i];
+											wins[i] = NULL;
+										}
+										if (res == 1) {
+											string fileName = openDlg->getResult();
+											delete wins[i];
+											wins[i] = NULL;
+
+											printf("Open file: %s\n", fileName.c_str());
+
+										}
+									}
+								}
 								eventRes = false;
 								break;
 							}
