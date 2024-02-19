@@ -12,6 +12,7 @@
 #include "doevents.h"
 #include "debug.h"
 #include "openDialog.h"
+#include "wav.h"
 
 //long long clockCount = 0;
 
@@ -156,7 +157,8 @@ int main(int argc, char* args[]) {
 
 	SDL_RenderPresent(renderer);
 	*/
-	
+	WAV* wav;
+	wav = new WAV();
 	Vector06c *vector;
 	vector = new Vector06c(renderer, updateMainWindow);
 	globalMachine = vector;
@@ -221,6 +223,7 @@ int main(int argc, char* args[]) {
 											wins[i] = NULL;
 
 											printf("Open file: %s\n", fileName.c_str());
+											wav->loadDataFromWave(fileName);
 
 										}
 									}
@@ -272,6 +275,7 @@ int main(int argc, char* args[]) {
 	}
 
 	delete vector;
+	delete wav;
 
 	printf("\n");
 
