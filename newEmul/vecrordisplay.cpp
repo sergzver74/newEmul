@@ -277,7 +277,7 @@ void VectorDisplay::syncDisplay() {
 void VectorDisplay::setPortData(uint16_t portNum, uint16_t data) {
 
 	if (portNum == 0) {
-		if (data != 0x88 && data != 0x8A && data != 0x06 && data != 0x07) {
+		if (data != 0x88 && data != 0x8A && data != 0x06 && data != 0x07 && data != 0x03) {
 			printf("Port1=%02X", data);
 			exit(0);
 		}

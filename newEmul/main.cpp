@@ -158,9 +158,9 @@ int main(int argc, char* args[]) {
 	SDL_RenderPresent(renderer);
 	*/
 	WAV* wav;
-	wav = new WAV();
+	wav = new WAV(3000000);
 	Vector06c *vector;
-	vector = new Vector06c(renderer, updateMainWindow);
+	vector = new Vector06c(renderer, updateMainWindow, wav);
 	globalMachine = vector;
 	globalMachine->start();
 	

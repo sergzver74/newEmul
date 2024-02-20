@@ -8,9 +8,11 @@ class WAV {
 public:
 	
 	
-	WAV();
+	WAV(uint32_t clk);
 	~WAV();
 	void loadDataFromWave(std::string name);
+	void playSample(uint32_t commandTicksCount);
+	bool getCurrentSample();
 
 
 private:
@@ -39,6 +41,13 @@ private:
 	uint16_t blockAlign;
 	uint16_t bitsPerSample;
 
+	uint8_t *data8;
+	uint16_t* data16;
+	uint32_t dataLen;
+	uint32_t curPlayedSample;
+	uint32_t clockPerSample;
+	uint32_t clock;
+	uint32_t curClocks;
 };
 
 #endif // !__WAV_H__

@@ -3,10 +3,11 @@
 
 #include <stdint.h>
 #include "ports.h"
+#include "wav.h"
 
 class Keyboard : public Ports {
 public:
-	Keyboard();
+	Keyboard(WAV *wav);
 	~Keyboard() {};
 
 	void setPortData(uint16_t portNum, uint16_t data);
@@ -38,6 +39,7 @@ private:
 	uint8_t port03;
 	uint8_t p02;
 	uint8_t p03;
+	WAV* wavPlayer;
 
 };
 

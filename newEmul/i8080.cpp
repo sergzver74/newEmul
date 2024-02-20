@@ -1062,7 +1062,7 @@ uint8_t i8080::execute() {
 		setfl();
 		fl &= 0xFE;
 		fl &= 0xEF;
-		NumTicks = 8;
+		NumTicks = 7;
 		break;
 	case 0xAF: // {xra a}
 		a ^= a;

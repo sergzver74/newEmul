@@ -1,7 +1,8 @@
 #include "kbdv6c.h"
 
-Keyboard::Keyboard() {
+Keyboard::Keyboard(WAV* wav) {
 	
+	wavPlayer = wav;
 	uint8_t k = 0;
 	uint8_t pr = 0;
 	
@@ -46,7 +47,11 @@ void Keyboard::setPortData(uint16_t portNum, uint16_t data) {
 }
 
 uint16_t Keyboard::getPortData(uint16_t portNum) {
-	if (portNum == 1) return port01;
+	if (portNum == 1) {
+		bool sample = wavPlayer->getCurrentSample();
+		if (sample) port01 |= 0x10; else port01 &= 0xEF;
+		return port01;
+	}
 	if (portNum == 2) return port02;
 	if (portNum == 3) return port03;
 	return 0x00;

@@ -10,12 +10,13 @@
 #include "machine.h"
 #include "vecrordisplay.h"
 #include "kbdv6c.h"
+#include "wav.h"
 
 class Vector06c : public Machine
 {
 public:
 	Vector06c();
-	Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback);
+	Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback, WAV* wav);
 	~Vector06c();
 
 	void timer();
@@ -40,6 +41,7 @@ private:
 	i8080 *cpu;
 	VectorDisplay *display;
 	Keyboard* keyboard;
+	WAV* wavPlayer;
 
 	SDL_Renderer* renderer;
 	uint64_t clockCount;

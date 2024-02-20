@@ -38,7 +38,7 @@ void Vector06c::recalculateToVector() {
 		commandTicksCount = 24;
 		return;
 	}
-	printf("error timings for vector06c\n");
+	printf("error timings for vector06c: %d\n", commandTicksCount);
 	exit(0);
 }
 
@@ -57,6 +57,7 @@ void Vector06c::timer() {
 			}
 			tickCount++;
 			if (tickCount == commandTicksCount) {
+				wavPlayer->playSample(commandTicksCount);
 				tickCount = 0;
 				cycle = false;
 			}
@@ -107,16 +108,17 @@ Vector06c::Vector06c() {
 
 }
 
-Vector06c::Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback)
+Vector06c::Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback, WAV* wav)
 {
 	renderer = rendr;
 	enabled = false;
+	wavPlayer = wav;
 	clock = new Timer(3000000);
 	mem = new Memory(65536, 5, 0, "d:\\boots.bin");
 	cpu = new i8080(mem);
 	uint8_t* vMem = NULL;
 	vMem = mem->getVideoMemoryPointer();
-	keyboard = new Keyboard();
+	keyboard = new Keyboard(wav);
 	display = new VectorDisplay(renderer, vMem, cpu, callback, keyboard);
 	tPorts prts = display->getPorts();
 	for (int i = 0; i < prts.count; i++) {
@@ -146,6 +148,7 @@ Vector06c::~Vector06c()
 	delete cpu;
 	delete mem;
 	delete clock;
+	wavPlayer = NULL;
 }
 
 void Vector06c::start() {
