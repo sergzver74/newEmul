@@ -260,3 +260,7 @@ uint8_t* Memory::getMemoryPointer(bool isRom, uint32_t* startAddr, uint32_t* end
 	}
 	return mem;
 }
+
+void Memory::resetMainMemory() {
+	for (int j = 0; j < 65536; j++) memory[0][j] = 0x00;
+}

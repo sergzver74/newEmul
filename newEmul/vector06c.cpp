@@ -178,6 +178,7 @@ void Vector06c::keyDown(uint32_t keyCode) {
 		cpu->reset();
 	}
 	if (res == 2) {
+		mem->resetMainMemory();
 		mem->changeROMStatus(true);
 		cpu->reset();
 	}

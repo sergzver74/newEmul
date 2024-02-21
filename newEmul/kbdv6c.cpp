@@ -75,9 +75,9 @@ uint8_t Keyboard::keyDown(uint8_t key) {
 }
 
 uint8_t Keyboard::keyUp(uint8_t key) {
-	if (key == 0x3F) vvod = false;
+	if (key == 0x3F) sbr = false;
 	if (key == 0x40) blk = false;
-	if (key == 0x41) sbr = false;
+	if (key == 0x41) vvod = false;
 
 	if (key == 0xE1) port01 |= 0x20;
 	if (key == 0xE0) port01 |= 0x40;

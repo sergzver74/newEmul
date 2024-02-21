@@ -112,9 +112,6 @@ void WAV::loadDataFromWave(std::string name) {
 							exit(-1);
 						}
 
-						SDL_PauseAudio(0);
-
-
 						if (header->subchunk2Id == 0x61746164) {
 							isLoaded = false;
 							if (data8) {
@@ -173,7 +170,7 @@ void WAV::loadDataFromWave(std::string name) {
 								}
 								else printf("Error reading data\n");
 							}
-						
+							SDL_PauseAudio(0);
 						
 						}
 						else printf("This is not WAV file format\n");

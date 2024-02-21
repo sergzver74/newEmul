@@ -32,6 +32,7 @@ public:
 	bool setWordToCurrentBank(uint16_t addr, uint16_t data);
 	uint8_t* getVideoMemoryPointer();
 	uint8_t* getMemoryPointer(bool isRom, uint32_t *startAddr, uint32_t *endAddr);
+	void resetMainMemory();
 private:
 	uint8_t memory[16][65536];
 	uint8_t ROMMemory[65536];

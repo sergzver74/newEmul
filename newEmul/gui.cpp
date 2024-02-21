@@ -1587,7 +1587,9 @@ void tFileList::Visibled(bool vis) {
 
 void tFileList::update() {
     
-    for (int i = 0; i < 16; i++) {
+    uint32_t cnt = 16;
+    if (count < 16) cnt = count;
+    for (int i = 0; i < cnt; i++) {
         names[i]->changecaption(files[startSelect + i].cFileName);
         string tmp = "";
         if (files[startSelect + i].dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) tmp = "DIR"; else {
