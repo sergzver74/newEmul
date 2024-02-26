@@ -49,6 +49,12 @@ private:
 	uint8_t port03;
 	uint8_t port0C;
 	bool back;
+	bool PRTA;
+	bool PRTB;
+	bool PRTClo;
+	bool PRTChi;
+	bool modeBClo;
+	uint8_t modeAChi;
 
 };
 

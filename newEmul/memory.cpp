@@ -264,3 +264,8 @@ uint8_t* Memory::getMemoryPointer(bool isRom, uint32_t* startAddr, uint32_t* end
 void Memory::resetMainMemory() {
 	for (int j = 0; j < 65536; j++) memory[0][j] = 0x00;
 }
+
+void Memory::setMemory(uint8_t* buf, uint16_t addr, uint16_t cnt) {
+	for (int i = 0; i < 0xFFFF; i++) memory[0][i] = 0;
+	for (int i = 0; i < cnt; i++) memory[0][addr + i] = buf[i];
+}

@@ -35,6 +35,7 @@ VectorDisplay::VectorDisplay(SDL_Renderer* rendr, uint8_t *videomem, i8080* c, s
 	uint16_t mx1 = 639;
 	uint16_t my1 = 639;
 	gContext = new Graph((void*)surface->pixels, 640, 640, bps);
+	kbd->setGraphContext(gContext);
 	fContext = new Font(gContext);
 	gContext->SetFillColor(cWINLIGHTGRAY);
 	gContext->bar(mx, my, mx1, my1);
@@ -61,11 +62,31 @@ VectorDisplay::VectorDisplay(SDL_Renderer* rendr, uint8_t *videomem, i8080* c, s
 	port02 = 0;
 	port03 = 0;
 	port0C = 0;
+	PRTA = false;
+	PRTB = false;
+	PRTClo = false;
+	PRTChi = false;
+	modeBClo = false;
+	modeAChi = 0;
 }
 
 VectorDisplay::~VectorDisplay() {
 	delete fContext;
 	delete gContext;
+	SGP = 0;
+	SVP = 0;
+	SADDR = 0xE0FF;
+	back = false;
+	port00 = 0;
+	port02 = 0;
+	port03 = 0;
+	port0C = 0;
+	PRTA = false;
+	PRTB = false;
+	PRTClo = false;
+	PRTChi = false;
+	modeBClo = false;
+	modeAChi = 0;
 }
 
 tPorts VectorDisplay::getPorts() {
@@ -277,28 +298,70 @@ void VectorDisplay::syncDisplay() {
 void VectorDisplay::setPortData(uint16_t portNum, uint16_t data) {
 
 	if (portNum == 0) {
-		if (data != 0x88 && data != 0x8A && data != 0x06 && data != 0x07 && data != 0x03) {
-			printf("Port1=%02X", data);
-			exit(0);
-		}
-		if (data == 0x06) {
-			gContext->SetColor(cRED);
-			gContext->circlegradient(30, 623, 5, 0, cRED, cRED);
-			return;
-		}
-		if (data == 0x07) {
-			gContext->SetColor(cLIGHTRED);
-			gContext->circlegradient(30, 623, 5, 0, cLIGHTRED, cLIGHTRED);
-			return;
+		if (data != 0x88 && data != 0x8A && data != 0x06 && data != 0x07 && data != 0x03 && data != 0x00 && data != 0x01) {
+			printf("Port0=%02X", data);
+			//exit(0);
 		}
 		port00 = data;
+		if (data < 0x80) {
+			uint8_t bit = data & 0x01;
+			uint8_t prt = (data >> 1) & 0x07;
+
+			if (prt == 0) {
+				// TO DO вывод на магнитофон
+			}
+			if (prt == 1) {
+				// управление двигателем магнитофона.
+			}
+			if (prt == 2) {
+				// CO клавиатуры (не тспользуется)
+			}
+			if (prt == 3) {
+				// РУС/ЛАТ
+				if (!bit) {
+					gContext->SetColor(cRED);
+					gContext->circlegradient(30, 623, 5, 0, cRED, cRED);
+					return;
+				} else {
+					gContext->SetColor(cLIGHTRED);
+					gContext->circlegradient(30, 623, 5, 0, cLIGHTRED, cLIGHTRED);
+					return;
+				}
+			}
+			// осталыные линии (4-7) на вывод не работают
+		}
+		else {
+			PRTClo = data & 0x01;
+			data >>= 1;
+			PRTB = data & 0x01;
+			data >>= 1;
+			modeBClo = data & 0x01;
+			if (modeBClo) {
+				printf("Settings mode=1 to PORT B\n");
+				exit(1);
+			}
+			data >>= 1;
+			PRTChi = data & 0x01;
+			data >>= 1;
+			PRTA = data & 0x01;
+			data >>= 1;
+			modeAChi = data & 0x03;
+			if (modeAChi) {
+				printf("Settings mode=%d to PORT A\n", modeAChi);
+				exit(1);
+			}
+		}
 	}
 	if (portNum == 2) {
-		if (port00 == 0x88) port02 = data;
+		//if (port00 == 0x88) port02 = data;
+		if (!PRTB) port02 = data;
 	}
 	if (portNum == 3) {
-		if (port00 == 0x88) port03 = data;
-		if (port00 == 0x8A) keyboard->setPortData(portNum, data);
+		if (!PRTA) {
+			if (PRTB) keyboard->setPortData(portNum, data); else port03 = data;
+		}
+		//if (port00 == 0x88) port03 = data;
+		//if (port00 == 0x8A) keyboard->setPortData(portNum, data);
 	}
 	if (portNum == 0x0C) {
 		port0C = data;
@@ -309,11 +372,15 @@ void VectorDisplay::setPortData(uint16_t portNum, uint16_t data) {
 uint16_t VectorDisplay::getPortData(uint16_t portNum) {
 	if (portNum == 0) return 0;
 	if (portNum == 2) {
-		if (port00 == 0x88) return port02; 
-		if (port00 == 0x8A) return keyboard->getPortData(portNum);
+		if (PRTB) {
+			//if (back)
+			return keyboard->getPortData(portNum);// else return port02;
+		} else return port02;
+		//if (port00 == 0x88) return port02; 
+		//if (port00 == 0x8A) return keyboard->getPortData(portNum);
 	}
 	if (portNum == 3) {
-		return port03;
+		if (PRTA) return port03;
 	}
 	if (portNum == 0x0C) return port0C;
 	return 0;

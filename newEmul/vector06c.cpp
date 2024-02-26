@@ -187,3 +187,21 @@ void Vector06c::keyDown(uint32_t keyCode) {
 void Vector06c::keyUp(uint32_t keyCode) {
 	keyboard->keyUp(keyCode);
 }
+
+void Vector06c::loadProgramToMemory(std::string url, bool addr0) {
+	FILE* f;
+	f = fopen(url.c_str(), "rb");
+	if (f) {
+		uint8_t* buf = new uint8_t[65536];
+
+		int res = fread(buf, 1, 65536, f);
+		bool oldEnabled = enabled;
+		enabled = false;
+		mem->setMemory(buf, addr0 ? 0: 0x100, res);
+		mem->changeROMStatus(false);
+		cpu->reset();
+		enabled = oldEnabled;
+
+		delete[] buf;
+	}
+}

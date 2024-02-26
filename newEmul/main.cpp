@@ -222,8 +222,18 @@ int main(int argc, char* args[]) {
 											delete wins[i];
 											wins[i] = NULL;
 
-											printf("Open file: %s\n", fileName.c_str());
-											wav->loadDataFromWave(fileName);
+											string ext = fileName.substr(fileName.length() - 3, 3);
+											printf("Extension=%s\n", ext.c_str());
+											if (ext == "wav") {
+
+												printf("Open file: %s\n", fileName.c_str());
+												wav->loadDataFromWave(fileName);
+											}
+											if (ext == "rom" || ext == "r0m") {
+												bool addr0 = false;
+												if (ext == "r0m") addr0 = true;
+												globalMachine->loadProgramToMemory(fileName, addr0);
+											}
 
 										}
 									}

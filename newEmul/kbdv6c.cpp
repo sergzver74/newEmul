@@ -27,8 +27,12 @@ Keyboard::Keyboard(WAV* wav) {
 	blk = false;
 	vvod = false;
 	sbr = false;
+	ss = false;
+	us = false;
+	ruslat = false;
 	p02 = 0xFF;
 	p03 = 0xFF;
+	port01 = 0xE2;
 }
 
 tPorts Keyboard::getPorts() {
@@ -37,8 +41,24 @@ tPorts Keyboard::getPorts() {
 	return ports;
 }
 
+void Keyboard::setGraphContext(Graph* gr) {
+	gContext = gr;
+}
+
 void Keyboard::setPortData(uint16_t portNum, uint16_t data) {
-	if (portNum == 1) port01 = data;
+	if (portNum == 1) {
+		port01 = data;
+		if ((port01 & 0x08) != 0x08) {
+			gContext->SetColor(cRED);
+			gContext->circlegradient(30, 623, 5, 0, cRED, cRED);
+			return;
+		}
+		else {
+			gContext->SetColor(cLIGHTRED);
+			gContext->circlegradient(30, 623, 5, 0, cLIGHTRED, cLIGHTRED);
+			return;
+		}
+	}
 	if (portNum == 2) port02 = data;
 	if (portNum == 3) {
 		port03 = data;
@@ -50,6 +70,10 @@ uint16_t Keyboard::getPortData(uint16_t portNum) {
 	if (portNum == 1) {
 		bool sample = wavPlayer->getCurrentSample();
 		if (sample) port01 |= 0x10; else port01 &= 0xEF;
+		if (ss) port01 &= 0xDF; else port01 |= 0x20;
+		if (us) port01 &= 0xBF; else port01 |= 0x40;
+		if (ruslat) port01 &= 0x7F; else  port01 |= 0x80;
+		port01 |= 0x02;
 		return port01;
 	}
 	if (portNum == 2) return port02;
@@ -62,10 +86,15 @@ uint8_t Keyboard::keyDown(uint8_t key) {
 	if (key == 0x40) blk = true;
 	if (key == 0x41) vvod = true;
 
-	if (key == 0xE1) port01 &= 0xDF;
-	if (key == 0xE0) port01 &= 0xBF;
-	if (key == 0xE2) port01 &= 0x7F;
+	//if (key == 0xE1) port01 &= 0xDF; //cc
+	//if (key == 0xE0) port01 &= 0xBF;//yc
+	//if (key == 0xE2) port01 &= 0x7F;//RUS-LAT 39
 	
+	if (key == 0xE1) ss = true;
+	if (key == 0xE0) us = true;
+	if (key == 0x39) ruslat = true;
+
+
 	p03 = kp03[key];
 	p02 = kp02[key];
 	
@@ -79,12 +108,16 @@ uint8_t Keyboard::keyUp(uint8_t key) {
 	if (key == 0x40) blk = false;
 	if (key == 0x41) vvod = false;
 
-	if (key == 0xE1) port01 |= 0x20;
-	if (key == 0xE0) port01 |= 0x40;
-	if (key == 0xE2) port01 |= 0x80;
+	if (key == 0xE1) ss = false;
+	if (key == 0xE0) us = false;
+	if (key == 0x39) ruslat = false;
+	
+	//if (key == 0xE1) port01 |= 0x20;
+	//if (key == 0xE0) port01 |= 0x40;
+	//if (key == 0xE2) port01 |= 0x80;
 
-	port02 = 0xFF;
-	port03 = 0xFF;
+	//port02 = 0xFF;
+	//port03 = 0xFF;
 	p02 = 0xFF;
 	p03 = 0xFF;
 

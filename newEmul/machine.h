@@ -18,6 +18,7 @@ public:
 	virtual void stop() = 0;
 	virtual void keyDown(uint32_t keyCode) = 0;
 	virtual void keyUp(uint32_t keyCode) = 0;
+	virtual void loadProgramToMemory(std::string url, bool addr0) = 0;
 };
 
 

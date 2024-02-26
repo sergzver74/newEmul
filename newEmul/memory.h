@@ -33,6 +33,7 @@ public:
 	uint8_t* getVideoMemoryPointer();
 	uint8_t* getMemoryPointer(bool isRom, uint32_t *startAddr, uint32_t *endAddr);
 	void resetMainMemory();
+	void setMemory(uint8_t* buf, uint16_t addr, uint16_t cnt);
 private:
 	uint8_t memory[16][65536];
 	uint8_t ROMMemory[65536];
