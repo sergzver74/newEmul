@@ -11,6 +11,8 @@
 #include "vecrordisplay.h"
 #include "kbdv6c.h"
 #include "wav.h"
+#include "sound.h"
+#include "k580vi53.h"
 
 class Vector06c : public Machine
 {
@@ -34,6 +36,7 @@ public:
 	void keyDown(uint32_t keyCode);
 	void keyUp(uint32_t keyCode);
 	void loadProgramToMemory(std::string url, bool addr0);
+	void loadDataToMemory(std::string url, int tp);
 
 private:
 
@@ -42,7 +45,9 @@ private:
 	i8080 *cpu;
 	VectorDisplay *display;
 	Keyboard* keyboard;
+	sound* snd;
 	WAV* wavPlayer;
+	K580VI53* timervi53;
 
 	SDL_Renderer* renderer;
 	uint64_t clockCount;

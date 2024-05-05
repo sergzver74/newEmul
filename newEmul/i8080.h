@@ -32,6 +32,8 @@ public:
 	void SetAssemblerValue(std::string addr, std::string value);
 	bool isHalted();
 	void setPort(uint16_t num, Ports* dev);
+	uint8_t getPort(uint8_t num);
+	uint16_t getPort(uint16_t num);
 
 private:
 	uint8_t ports_in[256];

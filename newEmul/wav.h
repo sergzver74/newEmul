@@ -2,7 +2,6 @@
 #define __WAV_H__
 
 #include <string>
-#include <Sdl.h>
 #include <stdint.h>
 
 class WAV {

@@ -45,6 +45,7 @@ void Vector06c::recalculateToVector() {
 void Vector06c::timer() {
 	
 	if (enabled) {
+		if (clockCount % 2 == 0) timervi53->step();
 		clockCount++;
 		if (!cycle) {
 			cycle = true;
@@ -58,6 +59,7 @@ void Vector06c::timer() {
 			tickCount++;
 			if (tickCount == commandTicksCount) {
 				wavPlayer->playSample(commandTicksCount);
+				snd->soundSteps(commandTicksCount, keyboard->getTapeOut(),wavPlayer->getCurrentSample(), timervi53->getOutStates());
 				tickCount = 0;
 				cycle = false;
 			}
@@ -76,7 +78,7 @@ void Vector06c::trace() {
 				recalculateToVector();
 			}
 			if (cycle) {
-				if ((tickCount & 0x03) == 0) {
+				if ((tickCount & 0x01) == 0) {
 					display->syncDisplay();
 				}
 				tickCount++;
@@ -128,22 +130,32 @@ Vector06c::Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* rende
 	for (int i = 0; i < krts.count; i++) {
 		cpu->setPort(krts.ports[i], keyboard);
 	}
+	timervi53 = new K580VI53();
+	tPorts trts = timervi53->getPorts();
+	for (int i = 0; i < trts.count; i++) {
+		cpu->setPort(trts.ports[i], timervi53);
+	}
+	snd = new sound(3000000);
 	cpu->reset();
 	clockCount = 0;
 	tickCount = 0;
 	commandTicksCount = 0;
 	cycle = false;
 	clock->start(this, true);
+	snd->pause(false);
 }
 
 Vector06c::~Vector06c()
 {
+	snd->pause(true);
 	tickCount = 0;
 	commandTicksCount = 0;
 	enabled = false;
 	cycle = false;
 	clock->stop();
 	Sleep(1000);
+	delete snd;
+	delete timervi53;
 	delete display;
 	delete cpu;
 	delete mem;
@@ -203,5 +215,24 @@ void Vector06c::loadProgramToMemory(std::string url, bool addr0) {
 		enabled = oldEnabled;
 
 		delete[] buf;
+		fclose(f);
 	}
+}
+
+void Vector06c::loadDataToMemory(std::string url, int tp) {
+	FILE* f;
+	f = fopen(url.c_str(), "rb");
+	if (f) {
+		uint8_t* buf = new uint8_t[65536];
+
+		int res = fread(buf, 1, 65536, f);
+
+		if (tp == 1) {
+			mem->setMemory(buf, 0x4300, res);
+		}
+
+		delete[] buf;
+		fclose(f);
+	}
+
 }

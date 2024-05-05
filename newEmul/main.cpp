@@ -159,6 +159,7 @@ int main(int argc, char* args[]) {
 	*/
 	WAV* wav;
 	wav = new WAV(3000000);
+
 	Vector06c *vector;
 	vector = new Vector06c(renderer, updateMainWindow, wav);
 	globalMachine = vector;
@@ -233,6 +234,10 @@ int main(int argc, char* args[]) {
 												bool addr0 = false;
 												if (ext == "r0m") addr0 = true;
 												globalMachine->loadProgramToMemory(fileName, addr0);
+											}
+											if (ext == "bas" || ext == "cas" || ext == "BAS" || ext == "CAS") {
+												printf("Opening BASIC file\n");
+												globalMachine->loadDataToMemory(fileName, 1);
 											}
 
 										}

@@ -13,6 +13,8 @@ public:
 
 	void setGraphContext(Graph* gr);
 	void setPortData(uint16_t portNum, uint16_t data);
+	void setTapeOut(bool to);
+	bool getTapeOut();
 	uint16_t getPortData(uint16_t portNum);
 	tPorts getPorts();
 
@@ -51,6 +53,7 @@ private:
 	bool ss;
 	bool us;
 	bool ruslat;
+	bool tapeOut;
 
 	uint8_t port01;
 	uint8_t port02;

@@ -3,11 +3,11 @@
 static uint8_t* audio_pos;
 static uint32_t audio_len;
 
-static Uint32 wav_length;
-static Uint8* wav_buffer;
-static SDL_AudioSpec wav_spec;
+//static Uint32 wav_length;
+//static Uint8* wav_buffer;
+//static SDL_AudioSpec wav_spec;
 
-
+/*
 void my_audio_callback(void* userdata, Uint8* stream, int len) {
 
 	if (audio_len == 0) {
@@ -22,6 +22,7 @@ void my_audio_callback(void* userdata, Uint8* stream, int len) {
 	audio_pos += len;
 	audio_len -= len;
 }
+*/
 
 WAV::WAV(uint32_t clk) {
 	clock = clk;
@@ -97,6 +98,7 @@ void WAV::loadDataFromWave(std::string name) {
 						printf("bitsPerSample=%d\n", bitsPerSample);
 						clockPerSample = clock / sampleRate;
 
+						/*
 						if (SDL_LoadWAV(name.c_str(), &wav_spec, &wav_buffer, &wav_length) == NULL) {
 							printf("SDL: Error loading wav\n");
 						}
@@ -111,6 +113,7 @@ void WAV::loadDataFromWave(std::string name) {
 							fprintf(stderr, "Couldn't open audio: %s\n", SDL_GetError());
 							exit(-1);
 						}
+						*/
 
 						if (header->subchunk2Id == 0x61746164) {
 							isLoaded = false;
@@ -170,7 +173,7 @@ void WAV::loadDataFromWave(std::string name) {
 								}
 								else printf("Error reading data\n");
 							}
-							SDL_PauseAudio(0);
+							//SDL_PauseAudio(0);
 						
 						}
 						else printf("This is not WAV file format\n");

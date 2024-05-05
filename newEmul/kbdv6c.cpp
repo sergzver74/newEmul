@@ -30,6 +30,7 @@ Keyboard::Keyboard(WAV* wav) {
 	ss = false;
 	us = false;
 	ruslat = false;
+	tapeOut = false;
 	p02 = 0xFF;
 	p03 = 0xFF;
 	port01 = 0xE2;
@@ -45,6 +46,14 @@ void Keyboard::setGraphContext(Graph* gr) {
 	gContext = gr;
 }
 
+void Keyboard::setTapeOut(bool to) {
+	tapeOut = to;
+}
+
+bool Keyboard::getTapeOut() {
+	return tapeOut;
+}
+
 void Keyboard::setPortData(uint16_t portNum, uint16_t data) {
 	if (portNum == 1) {
 		port01 = data;
@@ -58,6 +67,7 @@ void Keyboard::setPortData(uint16_t portNum, uint16_t data) {
 			gContext->circlegradient(30, 623, 5, 0, cLIGHTRED, cLIGHTRED);
 			return;
 		}
+		if ((data & 0x01) == 0x01) tapeOut = true; else tapeOut = false;
 	}
 	if (portNum == 2) port02 = data;
 	if (portNum == 3) {

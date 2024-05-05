@@ -3093,3 +3093,11 @@ void i8080::SetAssemblerValue(std::string addr, std::string value) {
 void i8080::setPort(uint16_t num, Ports* dev) {
 	prt[num] = dev;
 }
+
+uint8_t i8080::getPort(uint8_t num) {
+	return ports_out[num];
+}
+
+uint16_t i8080::getPort(uint16_t num) {
+	return 0;
+}

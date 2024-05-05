@@ -309,6 +309,7 @@ void VectorDisplay::setPortData(uint16_t portNum, uint16_t data) {
 
 			if (prt == 0) {
 				// TO DO вывод на магнитофон
+				keyboard->setTapeOut(bit);
 			}
 			if (prt == 1) {
 				// управление двигателем магнитофона.

@@ -20,6 +20,8 @@ public:
 	virtual void SetAssemblerValue(std::string addr, std::string value) = 0;
 	virtual bool isHalted() = 0;
 	virtual void setPort(uint16_t num, Ports* dev) = 0;
+	virtual uint8_t getPort(uint8_t num) = 0;
+	virtual uint16_t getPort(uint16_t num) = 0;
 };
 
 
