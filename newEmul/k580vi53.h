@@ -12,13 +12,30 @@ public:
 	Counter();
 	~Counter();
 
-	void SetRWMode(uint8_t rwMode);
-	void SetMode(uint8_t mode, uint8_t rwMode, bool bcd);
+	void SetRWMode();
+	void SetMode(uint8_t mode, uint8_t rwMode, bool bcdMode);
 	void writeCounter(uint8_t data);
 	uint8_t readCounter();
 	uint8_t step();
 
 private:
+	int latchValue;
+	int writeState;
+	int latchMode;
+	int out;
+	int value;
+	int modeInt;
+
+	uint8_t writeLsb;
+	uint8_t writeMsb;
+	uint16_t loadValue;
+
+	bool armed;
+	bool load;
+	bool enabled;
+	bool bcd;
+
+	int delay;
 
 };
 

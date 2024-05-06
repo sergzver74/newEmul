@@ -45,7 +45,12 @@ void Vector06c::recalculateToVector() {
 void Vector06c::timer() {
 	
 	if (enabled) {
-		if (clockCount % 2 == 0) timervi53->step();
+		if (clockCount % 2 == 0) {
+			timervi53->step();
+		}
+		if (clockCount % 4 == 0) {
+			display->syncDisplay();
+		}
 		clockCount++;
 		if (!cycle) {
 			cycle = true;
@@ -53,9 +58,9 @@ void Vector06c::timer() {
 			recalculateToVector();
 		}
 		if (cycle) {
-			if ((tickCount & 0x03) == 0) {
-				display->syncDisplay();
-			}
+			//if ((tickCount & 0x03) == 0) {
+			//	display->syncDisplay();
+			//}
 			tickCount++;
 			if (tickCount == commandTicksCount) {
 				wavPlayer->playSample(commandTicksCount);
