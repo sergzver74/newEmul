@@ -6,17 +6,18 @@
 #include <Sdl.h>
 
 #include "resampler.h"
+#include "k580vi53.h"
 
 #define BUFFERCOUNT	8
 #define BUFFERSIZE	8192
 
 class sound {
 public:
-	sound(uint32_t clock);
+	sound(uint32_t clock, K580VI53 *vi);
 	~sound();
 	void pause(bool pause);
 	void sample(float sampl);
-	void soundSteps(int nclk1m5, int tapeout, int tapein, int vi53);
+	void soundSteps(int nclk1m5, int tapeout, int tapein);
 private:
 	bool isInit;
 	SDL_AudioDeviceID dev;
@@ -34,6 +35,7 @@ private:
 	uint32_t curClocks = 0;
 	float lastSample = 0;
 	uint16_t clockPerSample = 0;
+	K580VI53* vi53;
 
 	Resampler resampler;
 };

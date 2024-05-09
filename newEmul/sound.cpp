@@ -1,13 +1,14 @@
 #include <string.h>
 #include "sound.h"
 
-sound::sound(uint32_t clock) {
+sound::sound(uint32_t clock, K580VI53* vi) {
 
     currentSamplePtr = 0;
     playBuf = 0;
     dataBbuf = 0;
     curClocks = 0;
     lastSample = 0;
+    vi53 = vi;
     
     SDL_AudioSpec sdlSpec;
     SDL_AudioSpec realSdlSpec;
@@ -42,6 +43,7 @@ sound::sound(uint32_t clock) {
 }
 
 sound::~sound() {
+    vi53 = NULL;
     isInit = false;
     SDL_CloseAudioDevice(dev);
 }
@@ -105,7 +107,7 @@ namespace std {
     }
 }
 
-void sound::soundSteps(int commandTicksCount, int tapeout, int tapein, int vi53)
+void sound::soundSteps(int commandTicksCount, int tapeout, int tapein)
 {
     //if (tapeout != 0) printf("output %d\n", tapeout);
     /*
@@ -117,7 +119,7 @@ void sound::soundSteps(int commandTicksCount, int tapeout, int tapein, int vi53)
         aych2 = Options.enable.ay_ch2;
     */
     
-    //for (int clk = 0; clk < commandTicksCount; ++clk) {
+    for (int clk = 0; clk < commandTicksCount; ++clk) {
         //float ay = this->aywrapper.step2(2, aych0, aych1, aych2);
 
         // timerwrapper does the stepping of 8253, it must always be called */
@@ -128,17 +130,22 @@ void sound::soundSteps(int commandTicksCount, int tapeout, int tapein, int vi53)
             + Options.volume.ay * ay;
         */
         //if (tapein == 0) tapein = 1; else tapein = 0;
-        float smpl = (tapeout + tapein) * 1.f + vi53 * 1.f;
+        float smpl = 0.f;
+        if (vi53) {
+            vi53->step();
+            smpl = (tapeout + tapein) * 0.1f + vi53->getOutStates() * 0.1f;
+        } else smpl = (tapeout + tapein) * 0.1f;
 
         //smpl = this->resampler.sample(smpl);
         //if (resampler.egg) {
         //    resampler.egg = false;
-        //    sample(std::clamp(smpl * 1.f, -1.f, 1.f));
+        //    sample(std::clamp(smpl * 1.5f, -1.f, 1.f));
         //}
 
-        curClocks += commandTicksCount;
+        //curClocks += commandTicksCount;
+        curClocks++;
         if (curClocks >= clockPerSample) {
-            sample(std::clamp(smpl * 1.f, -1.f, 1.f));
+            sample(std::clamp(smpl * 1.5f, -1.f, 1.f));
             curClocks -= clockPerSample;
         }
 
@@ -151,5 +158,5 @@ void sound::soundSteps(int commandTicksCount, int tapeout, int tapein, int vi53)
             //sample(smpl);
             //}
         //}
-    //}
+    }
 }

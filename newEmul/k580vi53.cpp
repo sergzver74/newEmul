@@ -267,7 +267,7 @@ uint8_t Counter::step() {
 		}
 		break;
 	case 3: // Square wave generator
-		if (enabled && load) {
+		if (!enabled && load) {
 			value = loadValue;
 			enabled = true;
 		}
@@ -352,7 +352,8 @@ void K580VI53::setPortData(uint16_t portNum, uint16_t data) {
 		setControlUnit(data);
 	}
 	else {
-		counters[(portNum - 1) & 0x03]->writeCounter(data);
+		uint8_t ch = 2 - (portNum - 1) & 0x03;
+		counters[ch]->writeCounter(data);
 	}
 }
 
@@ -363,7 +364,8 @@ uint16_t K580VI53::getPortData(uint16_t portNum) {
 		pRes = controlUnitPort;
 	}
 	else {
-		pRes = counters[(portNum - 1) & 0x03]->readCounter();
+		uint8_t ch = 2 - (portNum - 1) & 0x03;
+		pRes = counters[ch]->readCounter();
 	}
 
 	return pRes;

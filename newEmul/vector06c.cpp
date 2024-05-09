@@ -45,9 +45,9 @@ void Vector06c::recalculateToVector() {
 void Vector06c::timer() {
 	
 	if (enabled) {
-		if (clockCount % 2 == 0) {
-			timervi53->step();
-		}
+		//if (clockCount % 2 == 0) {
+		//	timervi53->step();
+		//}
 		if (clockCount % 4 == 0) {
 			display->syncDisplay();
 		}
@@ -64,7 +64,7 @@ void Vector06c::timer() {
 			tickCount++;
 			if (tickCount == commandTicksCount) {
 				wavPlayer->playSample(commandTicksCount);
-				snd->soundSteps(commandTicksCount, keyboard->getTapeOut(),wavPlayer->getCurrentSample(), timervi53->getOutStates());
+				snd->soundSteps(commandTicksCount, keyboard->getTapeOut(),wavPlayer->getCurrentSample());
 				tickCount = 0;
 				cycle = false;
 			}
@@ -140,7 +140,7 @@ Vector06c::Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* rende
 	for (int i = 0; i < trts.count; i++) {
 		cpu->setPort(trts.ports[i], timervi53);
 	}
-	snd = new sound(3000000);
+	snd = new sound(3000000, timervi53);
 	cpu->reset();
 	clockCount = 0;
 	tickCount = 0;
