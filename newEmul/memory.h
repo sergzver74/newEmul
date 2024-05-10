@@ -1,13 +1,14 @@
 #ifndef __MEMORY_H__
 #define __MEMORY_H__
 #include <string>
+#include "kvaz.h"
 
 using namespace std;
 
 class Memory {
 public:
 	Memory();
-	Memory(uint32_t maxMainMemorySize, uint8_t maxBankNumber, uint16_t ROMStartAddr, string ROMFileName);
+	Memory(uint32_t maxMainMemorySize, uint8_t maxBankNumber, uint16_t ROMStartAddr, string ROMFileName, kvaz *k);
 	~Memory();
 	void changeROMStatus(bool status);
 	bool getROMStatus();
@@ -44,6 +45,7 @@ private:
 	uint8_t currentBank;
 	uint32_t maxMemorySize;
 	string ROMMemoryFileName;
+	kvaz* kvazidisk;
 };
 
 #endif // !__MEMORY_H__

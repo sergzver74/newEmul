@@ -13,12 +13,13 @@
 #include "wav.h"
 #include "sound.h"
 #include "k580vi53.h"
+#include "kvaz.h"
 
 class Vector06c : public Machine
 {
 public:
 	Vector06c();
-	Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback, WAV* wav);
+	Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback, WAV* wav, bool kvazPresent);
 	~Vector06c();
 
 	void timer();
@@ -48,6 +49,7 @@ private:
 	sound* snd;
 	WAV* wavPlayer;
 	K580VI53* timervi53;
+	kvaz* kvazidisk;
 
 	SDL_Renderer* renderer;
 	uint64_t clockCount;

@@ -152,6 +152,7 @@
     <ClCompile Include="i8080.cpp" />
     <ClCompile Include="k580vi53.cpp" />
     <ClCompile Include="kbdv6c.cpp" />
+    <ClCompile Include="kvaz.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="memory.cpp" />
     <ClCompile Include="menu.cpp" />
@@ -178,6 +179,7 @@
     <ClInclude Include="interp.h" />
     <ClInclude Include="k580vi53.h" />
     <ClInclude Include="kbdv6c.h" />
+    <ClInclude Include="kvaz.h" />
     <ClInclude Include="machine.h" />
     <ClInclude Include="memory.h" />
     <ClInclude Include="menu.h" />

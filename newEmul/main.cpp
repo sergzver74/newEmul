@@ -161,7 +161,7 @@ int main(int argc, char* args[]) {
 	wav = new WAV(3000000);
 
 	Vector06c *vector;
-	vector = new Vector06c(renderer, updateMainWindow, wav);
+	vector = new Vector06c(renderer, updateMainWindow, wav, true);
 	globalMachine = vector;
 	globalMachine->start();
 	

@@ -248,6 +248,7 @@ uint8_t i8080::execute() {
 	uint16_t addr;
 	uint8_t dopcode, olda, b1;
 	uint8_t NumTicks = 0;
+	uint16_t afl;
 
 	if (HLT && !INTE) return 4;
 	if (HLT) return 4;
@@ -1501,10 +1502,12 @@ uint8_t i8080::execute() {
 		else NumTicks = 5;
 		break;
 	case 0xF1: // {pop psw}
-		mRes = memory->getByteFromCurrentBank(sp++, &fl);
+		mRes = memory->getWordFromCurrentBank(sp, &afl);
+		sp += 2;
+		a = afl & 0xFF;
+		fl = afl >> 8;
 		fl &= 0xD7;
 		fl |= 0x02;
-		mRes = memory->getByteFromCurrentBank(sp++, &a);
 		NumTicks = 10;
 		break;
 	case 0xF2: // {jp addr}
@@ -1530,10 +1533,11 @@ uint8_t i8080::execute() {
 		else NumTicks = 11;
 		break;
 	case 0xF5: // {push psw}
-		sp--;
-		mRes = memory->setByteToCurrentBank(sp, a);
-		sp--;
-		mRes = memory->setByteToCurrentBank(sp, fl);
+		sp -= 2;
+		afl = fl;
+		afl <<= 8;
+		afl |= a;
+		mRes = memory->setWordToCurrentBank(sp, afl);
 		NumTicks = 11;
 		break;
 	case 0xF6: // {ori}

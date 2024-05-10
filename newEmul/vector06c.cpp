@@ -115,16 +115,26 @@ Vector06c::Vector06c() {
 
 }
 
-Vector06c::Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback, WAV* wav)
+Vector06c::Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback, WAV* wav, bool kvazPresent)
 {
 	renderer = rendr;
 	enabled = false;
 	wavPlayer = wav;
 	clock = new Timer(3000000);
-	mem = new Memory(65536, 5, 0, "d:\\boots.bin");
+	if (kvazPresent) {
+		kvazidisk = new kvaz();
+	}
+	else kvazidisk = NULL;
+	mem = new Memory(65536, 5, 0, "d:\\boots.bin", kvazidisk);
 	cpu = new i8080(mem);
 	uint8_t* vMem = NULL;
 	vMem = mem->getVideoMemoryPointer();
+	if (kvazPresent) {
+		tPorts kvazPrt = kvazidisk->getPorts();
+		for (int i = 0; i < kvazPrt.count; i++) {
+			cpu->setPort(kvazPrt.ports[i], kvazidisk);
+		}
+	}
 	keyboard = new Keyboard(wav);
 	display = new VectorDisplay(renderer, vMem, cpu, callback, keyboard);
 	tPorts prts = display->getPorts();
@@ -164,6 +174,7 @@ Vector06c::~Vector06c()
 	delete display;
 	delete cpu;
 	delete mem;
+	delete kvazidisk;
 	delete clock;
 	wavPlayer = NULL;
 }
