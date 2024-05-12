@@ -2478,8 +2478,10 @@ string i8080::disAsm(uint16_t* addr, uint8_t n) {
 
 
 void i8080::interruptRequest() {
-	INTREQ = true;
-	HLT = false;
+	if (INTE) {
+		INTREQ = true;
+		HLT = false;
+	}
 }
 
 uint16_t i8080::getPC() {

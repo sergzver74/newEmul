@@ -77,15 +77,15 @@ void Vector06c::trace() {
 	tickCount = 0;
 	do {
 		do {
+			if ((tickCount % 4 == 0) == 0) {
+				display->syncDisplay();
+			}
 			if (!cycle) {
 				cycle = true;
 				commandTicksCount = cpu->execute();
 				recalculateToVector();
 			}
 			if (cycle) {
-				if ((tickCount & 0x01) == 0) {
-					display->syncDisplay();
-				}
 				tickCount++;
 				if (tickCount == commandTicksCount) {
 					tickCount = 0;
@@ -98,9 +98,32 @@ void Vector06c::trace() {
 
 void Vector06c::step() {
 	uint16_t curaddr = cpu->getPC();
-	do {
+	uint8_t iCode;
+	mem->getByte(curaddr, &iCode);
+	switch (iCode)
+	{
+	case 0xCD:
+	case 0xDD:
+	case 0xED:
+	case 0xFD:
+	case 0xC4:
+	case 0xCC:
+	case 0xD4:
+	case 0xDC:
+	case 0xE4:
+	case 0xEC:
+	case 0xF4:
+	case 0xFC: {
+		do {
+			trace();
+			printf("Cur addr: %04X, start addr: %04X\n", cpu->getPC(), curaddr);
+			if ((cpu->getPC() - curaddr) == 3) break;
+		} while (1);
+		break;
+	}
+	default:
 		trace();
-	} while ((curaddr > cpu->getPC() && curaddr <= cpu->getPC() + 3));
+	}
 }
 
 void Vector06c::stepTo(std::string addr) {
