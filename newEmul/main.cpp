@@ -13,6 +13,8 @@
 #include "debug.h"
 #include "openDialog.h"
 #include "wav.h"
+#include "vkeyboard.h"
+#include "vkeyb.h"
 
 //long long clockCount = 0;
 
@@ -24,13 +26,14 @@
 //	cp->reset();
 //}
 
-#define MAXWINDOWS	3
+#define MAXWINDOWS	5
 
 bool exitProgramm = false;
 SDL_Window* subWindow;
 SDL_Renderer* subRenderer;
 Debug* dbgWindow = NULL;
 OpenDialog* openDlg = NULL;
+VKEYBOARD* virtualKeyboard = NULL;
 Window *wins[MAXWINDOWS];
 Machine *globalMachine;
 Uint32 myEventType = 0;
@@ -91,6 +94,13 @@ void debugger() {
 	wins[1] = dbgWindow;
 }
 
+void vkeyboard() {
+	printf("Selected virtual keyboard\n");
+	vKeybParams kp = globalMachine->getVirtualKeyboardParams();
+	virtualKeyboard = new VKEYBOARD(globalMachine, "Virtual keyboard", 200, 200, kp.winWidth, kp.winHeigth, myEventType, kp);
+	wins[3] = virtualKeyboard;
+}
+
 void options() {
 	printf("Selected options\n");
 }
@@ -141,6 +151,7 @@ int main(int argc, char* args[]) {
 	mainMenu->addSubMenuItem(0, "Exit", exitRun);
 	mainMenu->addMainMenuItem("Debug");
 	mainMenu->addSubMenuItem(1, "Debugger", debugger);
+	mainMenu->addSubMenuItem(1, "Keyboard", vkeyboard);
 	mainMenu->addMainMenuItem("Settings");
 	mainMenu->addSubMenuItem(2, "Options", options);
 	mainMenu->Visibled(true);

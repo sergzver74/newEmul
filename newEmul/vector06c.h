@@ -14,6 +14,7 @@
 #include "sound.h"
 #include "k580vi53.h"
 #include "kvaz.h"
+#include "vkeyboard.h"
 
 class Vector06c : public Machine
 {
@@ -38,6 +39,7 @@ public:
 	void keyUp(uint32_t keyCode);
 	void loadProgramToMemory(std::string url, bool addr0);
 	void loadDataToMemory(std::string url, int tp);
+	vKeybParams getVirtualKeyboardParams();
 
 private:
 

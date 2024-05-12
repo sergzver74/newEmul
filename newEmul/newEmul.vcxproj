@@ -162,6 +162,7 @@
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="vecrordisplay.cpp" />
     <ClCompile Include="vector06c.cpp" />
+    <ClCompile Include="vkeyb.cpp" />
     <ClCompile Include="wav.cpp" />
     <ClCompile Include="window.cpp" />
     <ClCompile Include="z80.cpp" />
@@ -190,6 +191,8 @@
     <ClInclude Include="timer.h" />
     <ClInclude Include="vecrordisplay.h" />
     <ClInclude Include="vector06c.h" />
+    <ClInclude Include="vkeyb.h" />
+    <ClInclude Include="vkeyboard.h" />
     <ClInclude Include="wav.h" />
     <ClInclude Include="window.h" />
     <ClInclude Include="z80.h" />

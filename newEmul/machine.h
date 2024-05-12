@@ -2,6 +2,7 @@
 #define __MACHINE_H__
 #include "cpu.h"
 #include "memory.h"
+#include "vkeyboard.h"
 
 class Machine
 {
@@ -20,6 +21,7 @@ public:
 	virtual void keyUp(uint32_t keyCode) = 0;
 	virtual void loadProgramToMemory(std::string url, bool addr0) = 0;
 	virtual void loadDataToMemory(std::string url, int tp) = 0;
+	virtual vKeybParams getVirtualKeyboardParams() = 0;
 };
 
 
