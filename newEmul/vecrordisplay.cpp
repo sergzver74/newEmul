@@ -109,7 +109,7 @@ void VectorDisplay::reset() {
 
 void VectorDisplay::syncDisplay() {
 	
-	bool result = false;
+	//bool result = false;
 	uint16_t i;
 	uint8_t p0, p1, p2, p3, b0, b1, b2, b3, col;
 
