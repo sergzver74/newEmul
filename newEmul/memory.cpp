@@ -136,12 +136,12 @@ bool Memory::getWord(uint16_t addr, uint16_t* data) {
 		return false;
 	}
 	else {
-		if (addr + 1 < maxMemorySize) {
+		//if (addr + 1 < maxMemorySize) {
 			*data = memory[0][addr + 1];
 			*data <<= 8;
 			*data |= memory[0][addr];
 			return false;
-		}
+		//}
 	}
 	return true;
 }
@@ -256,12 +256,12 @@ bool Memory::setWordToCurrentBank(uint16_t addr, uint16_t data) {
 	if (kvazidisk && kvazidisk->setWord(addr, data)) {
 		return false;
 	}
-	if (addr + 1 < maxMemorySize) {
+	//if (uint16_t(addr + 1) < maxMemorySize) {
 		memory[currentBank][addr] = (uint8_t)(data & 0xFF);
 		memory[currentBank][addr + 1] = (uint8_t)(data >> 8);
 		return false;
-	}
-	else return true;
+	//}
+	//else return true;
 }
 
 uint8_t* Memory::getVideoMemoryPointer() {
