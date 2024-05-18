@@ -143,6 +143,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="config.cpp" />
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="doevents.cpp" />
     <ClCompile Include="fonts.cpp" />
@@ -168,6 +169,7 @@
     <ClCompile Include="z80.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="config.h" />
     <ClInclude Include="cpu.h" />
     <ClInclude Include="debug.h" />
     <ClInclude Include="doevents.h" />

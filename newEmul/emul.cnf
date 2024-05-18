@@ -1,0 +1,9 @@
+profile=vector06c
+debugmode=no
+
+[vector06c]
+name=Вектор-06ц
+rom=d:\emuldata\boots.bin
+ramdisk=yes
+fdd=d:\emuldata\sd.fdd
+hdd=d:\emuldata\vector.hdd

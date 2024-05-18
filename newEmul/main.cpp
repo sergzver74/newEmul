@@ -15,6 +15,7 @@
 #include "wav.h"
 #include "vkeyboard.h"
 #include "vkeyb.h"
+#include "config.h"
 
 //long long clockCount = 0;
 
@@ -39,6 +40,7 @@ Machine *globalMachine;
 Uint32 myEventType = 0;
 uint32_t mutex = 0;
 SDL_Surface* surf = NULL;
+WAV* wav;
 
 void updateMainWindow(SDL_Renderer* renderer, SDL_Surface* surface) {
 	while(mutex) {}
@@ -113,6 +115,9 @@ int main(int argc, char* args[]) {
 	printf("Start\n");
 	for (int i = 0; i < MAXWINDOWS; i++) wins[i] = NULL;
 	
+	config conf("emul.cnf");
+	CONFIG cfg = conf.getConfig();
+	
 	exitProgramm = false;
 	initEvents();
 
@@ -122,8 +127,10 @@ int main(int argc, char* args[]) {
 	int i;
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER);
-	SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &window, &renderer);
 	
+	window = SDL_CreateWindow(cfg.profiles[cfg.numProfile].name.c_str(), 100, 100, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
 	
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 	SDL_RenderClear(renderer);
@@ -158,23 +165,14 @@ int main(int argc, char* args[]) {
 	
 	updateMainWindow(renderer, surf);
 
-	/*
-	tex = SDL_CreateTextureFromSurface(renderer, surf);
+	if (cfg.profiles[cfg.numProfile].profileName == "vector06c") {
+		wav = new WAV(3000000);
 
-	if ((SDL_RenderCopy(renderer, tex, NULL, NULL)) < 0) {
-		printf("%s\n", SDL_GetError());
-		exit(-1);
+		Vector06c* vector;
+		vector = new Vector06c(renderer, updateMainWindow, wav, cfg.profiles[cfg.numProfile]);
+		globalMachine = vector;
+		globalMachine->start();
 	}
-
-	SDL_RenderPresent(renderer);
-	*/
-	WAV* wav;
-	wav = new WAV(3000000);
-
-	Vector06c *vector;
-	vector = new Vector06c(renderer, updateMainWindow, wav, true);
-	globalMachine = vector;
-	globalMachine->start();
 	
 	bool eventRes = false;
 	while (1) {
@@ -283,52 +281,16 @@ int main(int argc, char* args[]) {
 		if (eventRes) {
 			eventRes = false;
 			
-			if (!vector->getStatus()) updateMainWindow(renderer, surf);
-			/*
-			tex = SDL_CreateTextureFromSurface(renderer, surf);
-			if (tex) {
-				if ((SDL_RenderCopy(renderer, tex, NULL, NULL)) < 0) {
-					printf("MAIN TEXTUTE ERROR\n");
-					printf("%s\n", SDL_GetError());
-					exit(-1);
-				}
-
-				SDL_RenderPresent(renderer);
-			}
-			*/
+			if (!globalMachine->getStatus()) updateMainWindow(renderer, surf);
 		}
 		if (exitProgramm) break;
 	}
 
-	delete vector;
+	delete globalMachine;
 	delete wav;
 
 	printf("\n");
 
-	//Vector06c vector;
-	
-	//i8080 cpu;
-	//newCPU(&cpu);
-
-	/*
-	clockCount = 0;
-	
-	Timer timer(3000000);
-	timer.start(t3Mhz,true);
-
-	for (int i = 0; i < 30; i++) {
-		Sleep(1000);
-		long long clCount = clockCount;
-		clockCount = 0;
-		printf("Current clock: %lld Hz\n", clCount);
-	}
-	timer.stop();
-	*/
-	//screen_surface = SDL_GetWindowSurface(window);
-
-	//SDL_FillRect(screen_surface, NULL, SDL_MapRGB(screen_surface->format, 0, 255, 0));
-
-	//SDL_UpdateWindowSurface(window);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();

@@ -15,12 +15,13 @@
 #include "k580vi53.h"
 #include "kvaz.h"
 #include "vkeyboard.h"
+#include "config.h"
 
 class Vector06c : public Machine
 {
 public:
 	Vector06c();
-	Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback, WAV* wav, bool kvazPresent);
+	Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback, WAV* wav, PROFILE prof);
 	~Vector06c();
 
 	void timer();

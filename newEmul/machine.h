@@ -22,6 +22,7 @@ public:
 	virtual void loadProgramToMemory(std::string url, bool addr0) = 0;
 	virtual void loadDataToMemory(std::string url, int tp) = 0;
 	virtual vKeybParams getVirtualKeyboardParams() = 0;
+	virtual bool getStatus() = 0;
 };
 
 
