@@ -174,6 +174,13 @@ Vector06c::Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* rende
 		cpu->setPort(trts.ports[i], timervi53);
 	}
 	snd = new sound(3000000, timervi53);
+	if (prof.fddPresent) {
+		fddController = new K1818VG93(prof.fdd);
+		tPorts fddPorts = fddController->getPorts();
+		for (int i = 0; i < fddPorts.count; i++) {
+			cpu->setPort(fddPorts.ports[i], fddController);
+		}
+	}
 	cpu->reset();
 	clockCount = 0;
 	tickCount = 0;

@@ -151,6 +151,7 @@
     <ClCompile Include="gui.cpp" />
     <ClCompile Include="hex.cpp" />
     <ClCompile Include="i8080.cpp" />
+    <ClCompile Include="k1818vg93.cpp" />
     <ClCompile Include="k580vi53.cpp" />
     <ClCompile Include="kbdv6c.cpp" />
     <ClCompile Include="kvaz.cpp" />
@@ -180,6 +181,7 @@
     <ClInclude Include="hex.h" />
     <ClInclude Include="i8080.h" />
     <ClInclude Include="interp.h" />
+    <ClInclude Include="k1818vg93.h" />
     <ClInclude Include="k580vi53.h" />
     <ClInclude Include="kbdv6c.h" />
     <ClInclude Include="kvaz.h" />

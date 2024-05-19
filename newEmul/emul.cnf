@@ -5,5 +5,7 @@ debugmode=no
 name=Вектор-06ц
 rom=d:\emuldata\boots.bin
 ramdisk=yes
+fddcontroller=yes
 fdd=d:\emuldata\sd.fdd
+hddcontroller=no
 hdd=d:\emuldata\vector.hdd

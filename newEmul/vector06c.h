@@ -13,6 +13,7 @@
 #include "wav.h"
 #include "sound.h"
 #include "k580vi53.h"
+#include "k1818vg93.h"
 #include "kvaz.h"
 #include "vkeyboard.h"
 #include "config.h"
@@ -53,6 +54,7 @@ private:
 	WAV* wavPlayer;
 	K580VI53* timervi53;
 	kvaz* kvazidisk;
+	K1818VG93 *fddController;
 
 	SDL_Renderer* renderer;
 	uint64_t clockCount;
