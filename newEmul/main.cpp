@@ -171,7 +171,7 @@ int main(int argc, char* args[]) {
 		Vector06c* vector;
 		vector = new Vector06c(renderer, updateMainWindow, wav, cfg.profiles[cfg.numProfile]);
 		globalMachine = vector;
-		globalMachine->start();
+		if (!cfg.debugMode) globalMachine->start();
 	}
 	
 	bool eventRes = false;

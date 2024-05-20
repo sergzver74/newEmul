@@ -123,13 +123,14 @@ void K1818VG93::setPortData(uint16_t portNum, uint16_t data) {
 
 		break;
 	case 0x19:
-		curSect = data & 0xFF;
+		regSect = data & 0xFF;
 		break;
 	case 0x1A:
-		curTrack = data & 0xFF;
+		regTrack = data & 0xFF;
 		break;
 	case 0x1B:
 		{
+			regCommand = data & 0xFF;
 			if (FDDPresent) {
 				if ((data & 0xFF) >> 4 == 0) {
 					regData = 0;
