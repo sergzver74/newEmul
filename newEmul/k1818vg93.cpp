@@ -15,6 +15,8 @@ K1818VG93::K1818VG93(string fn) {
 	curSect = 0;
 	regSelect = 0;
 	stepDirection = false;
+	readMode = false;
+	writeMode = false;
 	if (fn != "") {
 		if (loadImage(fn)) FDDPresent = true; else FDDPresent = false;
 	}
@@ -38,6 +40,8 @@ K1818VG93::~K1818VG93() {
 	curTrack = 0;
 	regSelect = 0;
 	stepDirection = false;
+	readMode = false;
+	writeMode = false;
 }
 
 bool K1818VG93::loadImage(std::string fn) {
@@ -186,6 +190,20 @@ void K1818VG93::setPortData(uint16_t portNum, uint16_t data) {
 					else search(true);
 					if ((data & 0xFF) >> 4 == 1) regTrack = curTrack;
 				}
+				if ((data & 0xFF) >> 5 == 4) {
+					readMode = true;
+					impulse(true);
+					busy(true);
+					curCount = sectorLength;
+					curReadPointer = (regSect - 1) * sectorLength + inSide * (fddSide * 5120) + curTrack * 10240;
+				}
+				if ((data & 0xFF) >> 5 == 5) {
+					writeMode = true;
+					impulse(true);
+					busy(true);
+					curCount = sectorLength;
+					curReadPointer = (regSect - 1) * sectorLength + inSide * (fddSide * 5120) + curTrack * 10240;
+				}
 
 				ready(false);
 			} else ready(true);
@@ -206,7 +224,15 @@ void K1818VG93::setPortData(uint16_t portNum, uint16_t data) {
 uint16_t K1818VG93::getPortData(uint16_t portNum) {
 	switch (portNum) {
 	case 0x18:
-
+		if (readMode) {
+			curCount--;
+			if (curCount == 0)
+			{
+				regStatus = 0;
+				readMode = false;
+			}
+			return image[curReadPointer++];
+		}
 		break;
 	case 0x19:
 		return regSect;

@@ -46,6 +46,8 @@ private:
 	uint8_t inSide;
 	uint32_t curReadPointer;
 	uint32_t curCount;
+	bool readMode;
+	bool writeMode;
 
 
 };
