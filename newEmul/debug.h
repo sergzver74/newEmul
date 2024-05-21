@@ -30,6 +30,7 @@ private:
 	tButton* btnStep;
 	tButton* btnRunTo;
 	tButton* btnStop;
+	tButton* btnStart;
 	tEdit* edtAddr;
 	tHexViewer *hexViewer;
 	tButton* btnROM;

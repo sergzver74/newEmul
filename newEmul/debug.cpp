@@ -81,6 +81,12 @@ Debug::Debug(Machine* m, std::string name, uint16_t x, uint16_t y, uint16_t w, u
 	addEvent(btnStop, 1, 800, 690, 60, 20, 0, 0);
 	addEvent(btnStop, 2, 800, 690, 60, 20, 0, 0);
 
+	btnStart = new tButton(gContext, fContext);
+	btnStart->create(800, 720, 60, 20, "Start");
+	btnStart->Visibled(true);
+	addEvent(btnStart, 1, 800, 720, 60, 20, 0, 0);
+	addEvent(btnStart, 2, 800, 720, 60, 20, 0, 0);
+
 	edtAddr = new tEdit(gContext, fContext, winID, userEventType);
 	edtAddr->create(870, 660, 60, 25, 2, 1, "");
 	edtAddr->Visibled(true);
@@ -271,6 +277,11 @@ bool Debug::eventManager(SDL_Event event) {
 								if (winEvents[i].guiElement == btnStop) {
 									edtAddr->lostFocus();
 									computer->stop();
+									updateData();
+								}
+								if (winEvents[i].guiElement == btnStart) {
+									edtAddr->lostFocus();
+									computer->start();
 									updateData();
 								}
 								if (winEvents[i].guiElement == btnROM) {
