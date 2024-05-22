@@ -67,11 +67,40 @@ void Vector06c::timer() {
 				snd->soundSteps(commandTicksCount, keyboard->getTapeOut(),wavPlayer->getCurrentSample());
 				tickCount = 0;
 				cycle = false;
+				if (!cpu->isHalted()) {
+					if (stopNeeded) {
+						enabled = false;
+						stopNeeded = false;
+						debugUpdateNeeded = true;
+					}
+					if (debugMode) {
+						if (debugMode == 1) {
+							enabled = false;
+							debugUpdateNeeded = true;
+						}
+						if (debugMode == 2) {
+							uint16_t curaddr = cpu->getPC();
+							if (curaddr == stopAddr) {
+								enabled = false;
+								debugUpdateNeeded = true;
+							}
+						}
+					}
+				}
 			}
 		}
 	}
 }
 
+bool Vector06c::udateNeeded() {
+	return debugUpdateNeeded;
+}
+
+void Vector06c::updated() {
+	debugUpdateNeeded = false;
+}
+
+/*
 void Vector06c::trace() {
 
 	tickCount = 0;
@@ -125,12 +154,13 @@ void Vector06c::step() {
 		trace();
 	}
 }
+*/
 
 void Vector06c::stepTo(std::string addr) {
 	uint16_t stopAddr = hexToDec(addr);
 	printf("Run to addr: %04X(%d)\n", stopAddr, stopAddr);
 	do {
-		trace();
+		//trace();
 	} while (cpu->getPC() != stopAddr);
 }
 
@@ -143,6 +173,9 @@ Vector06c::Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* rende
 	renderer = rendr;
 	enabled = false;
 	wavPlayer = wav;
+	debugMode = 0;
+	stopAddr = 0;
+	debugUpdateNeeded = false;
 	clock = new Timer(3000000);
 	if (prof.ramdisk) {
 		kvazidisk = new kvaz();
@@ -184,6 +217,7 @@ Vector06c::Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* rende
 	cpu->reset();
 	clockCount = 0;
 	tickCount = 0;
+	stopNeeded = false;
 	commandTicksCount = 0;
 	cycle = false;
 	clock->start(this, true);
@@ -195,8 +229,12 @@ Vector06c::~Vector06c()
 	snd->pause(true);
 	tickCount = 0;
 	commandTicksCount = 0;
+	debugMode = 0;
+	stopAddr = 0;
 	enabled = false;
 	cycle = false;
+	stopNeeded = false;
+	debugUpdateNeeded = false;
 	clock->stop();
 	Sleep(1000);
 	delete snd;
@@ -209,12 +247,37 @@ Vector06c::~Vector06c()
 	wavPlayer = NULL;
 }
 
-void Vector06c::start() {
+void Vector06c::start(uint8_t mode) {
+	debugMode = mode;
+	if (debugMode == 2) {
+		uint16_t curaddr = cpu->getPC();
+		uint8_t iCode;
+		mem->getByte(curaddr, &iCode);
+		switch (iCode)
+		{
+		case 0xCD:
+		case 0xDD:
+		case 0xED:
+		case 0xFD:
+		case 0xC4:
+		case 0xCC:
+		case 0xD4:
+		case 0xDC:
+		case 0xE4:
+		case 0xEC:
+		case 0xF4:
+		case 0xFC: stopAddr = curaddr + 3;
+			break;
+		default:
+			debugMode = 1;
+		}
+	}
 	enabled = true;
 }
 
 void Vector06c::stop() {
-	enabled = false;
+	//enabled = false;
+	stopNeeded = true;
 }
 
 bool Vector06c::getStatus() {

@@ -171,9 +171,10 @@ int main(int argc, char* args[]) {
 		Vector06c* vector;
 		vector = new Vector06c(renderer, updateMainWindow, wav, cfg.profiles[cfg.numProfile]);
 		globalMachine = vector;
-		if (!cfg.debugMode) globalMachine->start();
+		if (!cfg.debugMode) globalMachine->start(0);
 	}
 	
+	bool updated = false;
 	bool eventRes = false;
 	while (1) {
 		if (SDL_PollEvent(&event) != 0) {
@@ -276,6 +277,12 @@ int main(int argc, char* args[]) {
 					}
 					else break;
 				}
+			}
+		}
+		if (wins[1]) {
+			if (globalMachine->udateNeeded()) {
+					dbgWindow->updateDataNeeded();
+					globalMachine->updated();
 			}
 		}
 		if (eventRes) {

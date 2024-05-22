@@ -261,13 +261,13 @@ bool Debug::eventManager(SDL_Event event) {
 								if (winEvents[i].guiElement == btnTrace) {
 									//uint16_t addr = vcpu->getPC();
 									edtAddr->lostFocus();
-									computer->trace();
-									updateData();
+									computer->start(1);
+									//updateData();
 								}
 								if (winEvents[i].guiElement == btnStep) {
 									edtAddr->lostFocus();
-									computer->step();
-									updateData();
+									computer->start(2);
+									//updateData();
 								}
 								if (winEvents[i].guiElement == btnRunTo) {
 									edtAddr->lostFocus();
@@ -277,11 +277,11 @@ bool Debug::eventManager(SDL_Event event) {
 								if (winEvents[i].guiElement == btnStop) {
 									edtAddr->lostFocus();
 									computer->stop();
-									updateData();
+									//updateData();
 								}
 								if (winEvents[i].guiElement == btnStart) {
 									edtAddr->lostFocus();
-									computer->start();
+									computer->start(0);
 									updateData();
 								}
 								if (winEvents[i].guiElement == btnROM) {
@@ -412,4 +412,9 @@ void Debug::updateData() {
 	uint16_t addr = vcpu->getPC();
 	disasmText->changecaption(vcpu->disAsm(&addr, 16));
 	hexViewer->updateData();
+}
+
+void Debug::updateDataNeeded() {
+	updateData();
+	updateWindow();
 }

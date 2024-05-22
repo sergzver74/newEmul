@@ -28,13 +28,13 @@ public:
 	void timer();
 	CPU* getCPU();
 
-	void start();
+	void start(uint8_t mode);
 	void stop();
 	bool getStatus();
 	void recalculateToVector();
 	
-	void trace();
-	void step();
+	//void trace();
+	//void step();
 	void stepTo(std::string addr);
 	Memory* getMemory();
 	void keyDown(uint32_t keyCode);
@@ -42,6 +42,8 @@ public:
 	void loadProgramToMemory(std::string url, bool addr0);
 	void loadDataToMemory(std::string url, int tp);
 	vKeybParams getVirtualKeyboardParams();
+	bool udateNeeded();
+	void updated();
 
 private:
 
@@ -63,6 +65,10 @@ private:
 	bool enabled;
 	bool cycle;
 	bool INTE;
+	uint8_t debugMode;
+	uint16_t stopAddr;
+	bool stopNeeded;
+	bool debugUpdateNeeded;
 
 
 };

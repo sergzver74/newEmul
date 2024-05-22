@@ -50,6 +50,7 @@ public:
 	Debug(Machine *m, std::string name, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ev);
 	virtual ~Debug();
 	bool eventManager(SDL_Event event);
+	void updateDataNeeded();
 
 };
 
