@@ -10,6 +10,7 @@
 #include "machine.h"
 #include "emutypes.h"
 #include "hex.h"
+#include "breakpoints.h"
 
 #define DISASSEMBLERROWS	16
 
@@ -44,10 +45,12 @@ private:
 	uint16_t tempEditKeyEventNom;
 	uint16_t tempEditCursorEventNum;
 
+	Breakpoints* breakPoints;
+
 	void updateData();
 
 public:
-	Debug(Machine *m, std::string name, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ev);
+	Debug(Machine *m, std::string name, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ev, Breakpoints* bp);
 	virtual ~Debug();
 	bool eventManager(SDL_Event event);
 	void updateDataNeeded();

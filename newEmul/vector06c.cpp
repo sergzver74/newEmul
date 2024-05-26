@@ -85,6 +85,11 @@ void Vector06c::timer() {
 								debugUpdateNeeded = true;
 							}
 						}
+						if (breakPoints->checkAddr(cpu->getPC())) {
+							enabled = false;
+							debugMode = 1;
+							debugUpdateNeeded = true;
+						}
 					}
 				}
 			}
@@ -154,7 +159,6 @@ void Vector06c::step() {
 		trace();
 	}
 }
-*/
 
 void Vector06c::stepTo(std::string addr) {
 	uint16_t stopAddr = hexToDec(addr);
@@ -163,14 +167,16 @@ void Vector06c::stepTo(std::string addr) {
 		//trace();
 	} while (cpu->getPC() != stopAddr);
 }
+*/
 
 Vector06c::Vector06c() {
 
 }
 
-Vector06c::Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback, WAV* wav, PROFILE prof)
+Vector06c::Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback, WAV* wav, PROFILE prof, Breakpoints* bp)
 {
 	renderer = rendr;
+	breakPoints = bp;
 	enabled = false;
 	wavPlayer = wav;
 	debugMode = 0;

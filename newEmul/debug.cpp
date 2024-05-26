@@ -1,8 +1,10 @@
 #include "debug.h"
 
-Debug::Debug(Machine* m, std::string name, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ev) : Window(name, x, y, w, h, ev) {
+Debug::Debug(Machine* m, std::string name, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ev, Breakpoints* bp) : Window(name, x, y, w, h, ev) {
 
 	computer = m;
+	computer->stop();
+	breakPoints = bp;
 	vcpu = m->getCPU();
 	regs = vcpu->getRegisters();
 	
@@ -165,8 +167,8 @@ Debug::~Debug() {
 	delete disText;
 	delete regText;
 	vcpu = NULL;
+	computer->start(0);
 	computer = NULL;
-
 }
 
 bool Debug::eventManager(SDL_Event event) {
@@ -271,8 +273,10 @@ bool Debug::eventManager(SDL_Event event) {
 								}
 								if (winEvents[i].guiElement == btnRunTo) {
 									edtAddr->lostFocus();
-									computer->stepTo(edtAddr->getText());
-									updateData();
+									breakPoints->addAddr(edtAddr->getText(), true);
+									computer->start(3);
+									//computer->stepTo(edtAddr->getText());
+									//updateData();
 								}
 								if (winEvents[i].guiElement == btnStop) {
 									edtAddr->lostFocus();
@@ -281,7 +285,7 @@ bool Debug::eventManager(SDL_Event event) {
 								}
 								if (winEvents[i].guiElement == btnStart) {
 									edtAddr->lostFocus();
-									computer->start(0);
+									computer->start(3);
 									updateData();
 								}
 								if (winEvents[i].guiElement == btnROM) {

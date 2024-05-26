@@ -16,6 +16,7 @@
 #include "vkeyboard.h"
 #include "vkeyb.h"
 #include "config.h"
+#include "breakpoints.h"
 
 //long long clockCount = 0;
 
@@ -41,6 +42,7 @@ Uint32 myEventType = 0;
 uint32_t mutex = 0;
 SDL_Surface* surf = NULL;
 WAV* wav;
+Breakpoints* breakPoints = NULL;
 
 void updateMainWindow(SDL_Renderer* renderer, SDL_Surface* surface) {
 	while(mutex) {}
@@ -92,7 +94,7 @@ void debugger() {
 	printf("Selected debugger\n");
 	uint32_t debudWindowWidth = 1024;
 	uint32_t debudWindowHeight = 768;
-	dbgWindow = new Debug(globalMachine, "Debug", 200, 200, debudWindowWidth, debudWindowHeight, myEventType);
+	dbgWindow = new Debug(globalMachine, "Debug", 200, 200, debudWindowWidth, debudWindowHeight, myEventType, breakPoints);
 	wins[1] = dbgWindow;
 }
 
@@ -165,11 +167,13 @@ int main(int argc, char* args[]) {
 	
 	updateMainWindow(renderer, surf);
 
+	breakPoints = new Breakpoints();
+
 	if (cfg.profiles[cfg.numProfile].profileName == "vector06c") {
 		wav = new WAV(3000000);
 
 		Vector06c* vector;
-		vector = new Vector06c(renderer, updateMainWindow, wav, cfg.profiles[cfg.numProfile]);
+		vector = new Vector06c(renderer, updateMainWindow, wav, cfg.profiles[cfg.numProfile], breakPoints);
 		globalMachine = vector;
 		if (!cfg.debugMode) globalMachine->start(0);
 	}
@@ -295,6 +299,7 @@ int main(int argc, char* args[]) {
 
 	delete globalMachine;
 	delete wav;
+	delete breakPoints;
 
 	printf("\n");
 

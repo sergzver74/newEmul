@@ -9,17 +9,6 @@
 #define EQUALVAL	2
 #define NONEQUALVAL 3
 
-typedef struct {
-	uint16_t addr;
-	uint8_t type;
-	uint16_t value;
-}Breakpoint;
-
-typedef struct {
-	uint8_t count;
-	Breakpoint bp[64];
-}Breakpoints;
-
 class Machine
 {
 public:
@@ -30,7 +19,7 @@ public:
 	virtual Memory* getMemory() = 0;
 	//virtual void trace() = 0;
 	//virtual void step() = 0;
-	virtual void stepTo(std::string addr) = 0;
+	//virtual void stepTo(std::string addr) = 0;
 	virtual void start(uint8_t mode) = 0;
 	virtual void stop() = 0;
 	virtual void keyDown(uint32_t keyCode) = 0;

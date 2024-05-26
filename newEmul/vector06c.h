@@ -17,12 +17,13 @@
 #include "kvaz.h"
 #include "vkeyboard.h"
 #include "config.h"
+#include "breakpoints.h"
 
 class Vector06c : public Machine
 {
 public:
 	Vector06c();
-	Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback, WAV* wav, PROFILE prof);
+	Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* renderer, SDL_Surface* surface)> callback, WAV* wav, PROFILE prof, Breakpoints* bp);
 	~Vector06c();
 
 	void timer();
@@ -35,7 +36,7 @@ public:
 	
 	//void trace();
 	//void step();
-	void stepTo(std::string addr);
+	//void stepTo(std::string addr);
 	Memory* getMemory();
 	void keyDown(uint32_t keyCode);
 	void keyUp(uint32_t keyCode);
@@ -69,7 +70,7 @@ private:
 	uint16_t stopAddr;
 	bool stopNeeded;
 	bool debugUpdateNeeded;
-
+	Breakpoints* breakPoints;
 
 };
 
