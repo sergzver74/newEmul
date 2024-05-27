@@ -426,4 +426,41 @@ public:
     void Destroy();
 };
 
+class tBreakPointSet : public GUI {
+private:
+    uint16_t hx;
+    uint16_t hy;
+    uint16_t hx1;
+    uint16_t hy1;
+    uint16_t dx;
+    uint16_t dy;
+    int fontid;
+    int size;
+    uint8_t count;
+    unsigned int* lbl;
+    bool visible;
+    bool enable;
+
+    Graph* grContext;
+    Font* fontContext;
+
+    tLabel* bp[20];
+
+public:
+    tBreakPointSet(Graph* gc, Font* fc, uint32_t n);
+    ~tBreakPointSet();
+    void create(int x, int y, int dx, int dy, int fid, int sz);
+    void Visibled(bool vis);
+    void Enabled(bool en);
+    void getPositionAndSize(int* x, int* y, int* x1, int* y1);
+    void OnKeyDown(uint32_t param1, uint32_t param2);
+    void OnDblClick(uint32_t param1, uint32_t param2);
+    void OnClick(uint32_t param1, uint32_t param2);
+    void OnClickUp(uint32_t param1, uint32_t param2);
+    void OnMove(uint32_t param1, uint32_t param2);
+    void OnEndMove(uint32_t param1, uint32_t param2);
+    
+    void Destroy();
+};
+
 #endif // !__GUI_H__

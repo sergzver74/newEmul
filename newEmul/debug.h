@@ -12,7 +12,7 @@
 #include "hex.h"
 #include "breakpoints.h"
 
-#define DISASSEMBLERROWS	16
+#define DISASSEMBLERROWS	20
 
 class Debug: public Window {
 private:

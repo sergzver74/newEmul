@@ -13,7 +13,7 @@ Debug::Debug(Machine* m, std::string name, uint16_t x, uint16_t y, uint16_t w, u
 	regText->setparam(2, 1, 0, 0, 0);
 	regText->Visibled(true);
 	disText = new tLabel(gContext, fContext);
-	disText->create(620, 20, 150, 20, cBLACK, "Дисассемблер:");
+	disText->create(640, 20, 150, 20, cBLACK, "Дисассемблер:");
 	disText->setparam(2, 1, 0, 0, 0);
 	disText->Visibled(true);
 
@@ -52,12 +52,16 @@ Debug::Debug(Machine* m, std::string name, uint16_t x, uint16_t y, uint16_t w, u
 
 	uint16_t addr = vcpu->getPC();
 	disasmText = new tLabel(gContext, fContext);
-	disasmText->create(620, 40, 180, 350, cBLACK, vcpu->disAsm(&addr, DISASSEMBLERROWS));
+	disasmText->create(640, 40, 160, 350, cBLACK, vcpu->disAsm(&addr, DISASSEMBLERROWS));
 	disasmText->setparam(0, 1, 0, 0, 0);
 	disasmText->Visibled(true);
 	for (int i = 0; i < DISASSEMBLERROWS; i++) {
-		addEvent(disasmText, 5, 620, 40 + 16*i, 180, 16, 3, i);
+		addEvent(disasmText, 5, 640, 40 + 16*i, 160, 16, 3, i);
 	}
+
+	gContext->SetFillColor(0x00C0C0C0);
+	gContext->SetColor(0x00C0C0C0);
+	gContext->bar(620, 40, 636, 360);
 
 	btnTrace = new tButton(gContext, fContext);
 	btnTrace->create(800, 600, 60, 20, "Trace");
@@ -414,7 +418,7 @@ void Debug::updateData() {
 	regs = nregs;
 
 	uint16_t addr = vcpu->getPC();
-	disasmText->changecaption(vcpu->disAsm(&addr, 16));
+	disasmText->changecaption(vcpu->disAsm(&addr, DISASSEMBLERROWS));
 	hexViewer->updateData();
 }
 

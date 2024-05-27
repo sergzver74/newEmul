@@ -1789,3 +1789,81 @@ void tFileList::Destroy() {
 bool tFileList::getFocus() {
     return false;
 }
+
+tBreakPointSet::tBreakPointSet(Graph* gc, Font* fc, uint32_t n) {
+    grContext = gc;
+    fontContext = fc;
+    count = n;
+}
+
+tBreakPointSet::~tBreakPointSet() {
+    for (int i = 0; i < 20; i++) {
+        if (bp[i]) {
+            bp[i]->Destroy();
+            delete bp[i];
+            bp[i] = NULL;
+        }
+    }
+    grContext = NULL;
+    fontContext = NULL;
+    count = 0;
+}
+
+void tBreakPointSet::create(int x, int y, int dx, int dy, int fid, int sz) {
+    hx = 0;
+    hy = 0;
+    hx1 = 0;
+    hy1 = 0;
+    dx = 0;
+    dy = 0;
+    lbl = NULL;
+    visible = false;
+    enable = false;
+    fontid = fid;
+    size = sz;
+    for (int i = 0; i < 20; i++) {
+        bp[i] = new tLabel(grContext, fontContext);
+        bp[i]->create(hx, hy + (i*16), dx, hy + (i * 16) + 16, cBLACK, "");
+        bp[i]->setparam(fontid, size, 0, 0, 0);
+    }
+}
+
+void tBreakPointSet::Visibled(bool vis) {
+
+}
+
+void tBreakPointSet::Enabled(bool en) {
+
+}
+
+void tBreakPointSet::getPositionAndSize(int* x, int* y, int* x1, int* y1) {
+
+}
+
+void tBreakPointSet::OnKeyDown(uint32_t param1, uint32_t param2) {
+
+}
+
+void tBreakPointSet::OnDblClick(uint32_t param1, uint32_t param2) {
+
+}
+
+void tBreakPointSet::OnClick(uint32_t param1, uint32_t param2) {
+
+}
+
+void tBreakPointSet::OnClickUp(uint32_t param1, uint32_t param2) {
+
+}
+
+void tBreakPointSet::OnMove(uint32_t param1, uint32_t param2) {
+
+}
+
+void tBreakPointSet::OnEndMove(uint32_t param1, uint32_t param2) {
+
+}
+
+void tBreakPointSet::Destroy() {
+
+}
