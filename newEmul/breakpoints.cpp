@@ -30,3 +30,10 @@ bool Breakpoints::checkAddr(uint16_t addr) {
 	}
 	else return false;
 }
+
+bool Breakpoints::getAddrStatus(uint16_t addr) {
+	if (bpmap[addr]) {
+		return true;
+	}
+	else return false;
+}

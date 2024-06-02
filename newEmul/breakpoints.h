@@ -15,6 +15,7 @@ public:
 	void addAddr(std::string addr, bool isOnce);
 	void deleteAddr(uint16_t addr);
 	bool checkAddr(uint16_t addr);
+	bool getAddrStatus(uint16_t addr);
 
 private:
 	uint8_t* bpmap;

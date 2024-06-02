@@ -1790,10 +1790,23 @@ bool tFileList::getFocus() {
     return false;
 }
 
-tBreakPointSet::tBreakPointSet(Graph* gc, Font* fc, uint32_t n) {
+tBreakPointSet::tBreakPointSet(Graph* gc, Font* fc, uint32_t n, Breakpoints* bp) {
     grContext = gc;
     fontContext = fc;
+    b = bp;
     count = n;
+    asmTxt = "";
+    hx = 0;
+    hy = 0;
+    hx1 = 0;
+    hy1 = 0;
+    dx = 0;
+    dy = 0;
+    lbl = NULL;
+    visible = false;
+    enable = false;
+    fontid = 0;
+    size = 1;
 }
 
 tBreakPointSet::~tBreakPointSet() {
@@ -1807,9 +1820,7 @@ tBreakPointSet::~tBreakPointSet() {
     grContext = NULL;
     fontContext = NULL;
     count = 0;
-}
-
-void tBreakPointSet::create(int x, int y, int dx, int dy, int fid, int sz) {
+    asmTxt = "";
     hx = 0;
     hy = 0;
     hx1 = 0;
@@ -1819,17 +1830,102 @@ void tBreakPointSet::create(int x, int y, int dx, int dy, int fid, int sz) {
     lbl = NULL;
     visible = false;
     enable = false;
-    fontid = fid;
-    size = sz;
+    fontid = 0;
+    size = 0;
+}
+
+std::string tBreakPointSet::getString(uint8_t n) {
+    std::string res = "";
+    uint8_t cnt = 0;
+    n++;
+
+    std::string s = "";
+    for (int i = 0; i < asmTxt.length(); i++) {
+        if (asmTxt[i] != '\n') s += asmTxt[i]; else {
+            cnt++;
+            if (cnt == n) {
+                res = s;
+                break;
+            }
+            else {
+                s = "";
+            }
+        }
+    }
+
+    return res;
+}
+
+uint16_t tBreakPointSet::getAddrFromASMString(uint8_t n) {
+    uint16_t res = 0;
+
+    std::string s = getString(n);
+    std::string as = s.substr(0, 4);
+    res = hexToDec(as);
+
+    return res;
+}
+
+void tBreakPointSet::checkExistsBreakpoints() {
+    std::string sbp = "";
+    sbp += char(0x95);
     for (int i = 0; i < 20; i++) {
-        bp[i] = new tLabel(grContext, fontContext);
-        bp[i]->create(hx, hy + (i*16), dx, hy + (i * 16) + 16, cBLACK, "");
-        bp[i]->setparam(fontid, size, 0, 0, 0);
+        uint16_t addr = getAddrFromASMString(i);
+        if (b->getAddrStatus(addr)) {
+            bp[i]->changecaption(sbp);
+        }
+        else {
+            bp[i]->changecaption("");
+        }
     }
 }
 
-void tBreakPointSet::Visibled(bool vis) {
+void tBreakPointSet::create(int x, int y, int dx, int dy, int fid, int sz, std::string s) {
+    hx = x;
+    hy = y;
+    hx1 = x + dx;
+    hy1 = y + dy;
+    this->dx = dx;
+    this->dy = dy;
+    lbl = NULL;
+    visible = false;
+    enable = false;
+    fontid = fid;
+    size = sz;
+    asmTxt = s;
+    for (int i = 0; i < 20; i++) {
+        bp[i] = new tLabel(grContext, fontContext);
+        bp[i]->create(hx, hy + (i*16), dx, hy + (i * 16) + 16, cLIGHTRED, "");
+        bp[i]->setparam(fontid, size, 0, 0, 0);
+    }
+    checkExistsBreakpoints();
+}
 
+void tBreakPointSet::changeASMList(std::string txt) {
+    asmTxt = txt;
+    checkExistsBreakpoints();
+}
+
+void tBreakPointSet::Visibled(bool vis) {
+    if (vis != visible) {
+        visible = vis;
+        if (visible) {
+            lbl = grContext->getImage(hx, hy, hx1, hy1);
+            grContext->SetFillColor(0x00C0C0C0);
+            grContext->SetColor(0x00C0C0C0);
+            grContext->bar(hx, hy, hx1, hy1);
+        }
+        else {
+
+
+            if (lbl != NULL)
+            {
+                grContext->putImage(hx, hy, lbl);
+                grContext->freeImage(lbl);
+                lbl = NULL;
+            }
+        }
+    }
 }
 
 void tBreakPointSet::Enabled(bool en) {
@@ -1862,6 +1958,14 @@ void tBreakPointSet::OnMove(uint32_t param1, uint32_t param2) {
 
 void tBreakPointSet::OnEndMove(uint32_t param1, uint32_t param2) {
 
+}
+
+bool tBreakPointSet::getFocus() {
+    return false;
+}
+
+std::string tBreakPointSet::getText() {
+    return asmTxt;
 }
 
 void tBreakPointSet::Destroy() {

@@ -46,6 +46,7 @@ private:
 	uint16_t tempEditCursorEventNum;
 
 	Breakpoints* breakPoints;
+	tBreakPointSet* breakPointSet;
 
 	void updateData();
 

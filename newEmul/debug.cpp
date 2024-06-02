@@ -51,17 +51,22 @@ Debug::Debug(Machine* m, std::string name, uint16_t x, uint16_t y, uint16_t w, u
 	}
 
 	uint16_t addr = vcpu->getPC();
+	string sAsm = vcpu->disAsm(&addr, DISASSEMBLERROWS);
 	disasmText = new tLabel(gContext, fContext);
-	disasmText->create(640, 40, 160, 350, cBLACK, vcpu->disAsm(&addr, DISASSEMBLERROWS));
+	disasmText->create(640, 40, 160, 350, cBLACK, sAsm);
 	disasmText->setparam(0, 1, 0, 0, 0);
 	disasmText->Visibled(true);
 	for (int i = 0; i < DISASSEMBLERROWS; i++) {
 		addEvent(disasmText, 5, 640, 40 + 16*i, 160, 16, 3, i);
 	}
 
-	gContext->SetFillColor(0x00C0C0C0);
-	gContext->SetColor(0x00C0C0C0);
-	gContext->bar(620, 40, 636, 360);
+	breakPointSet = new tBreakPointSet(gContext, fContext, DISASSEMBLERROWS, breakPoints);
+	breakPointSet->create(620, 40, 16, 320, 0, 1, sAsm);
+	breakPointSet->Visibled(true);
+	for (int i = 0; i < DISASSEMBLERROWS; i++) {
+		addEvent(breakPointSet, 2, 620, 40 + 16 * i, 16, 16, 0, i);
+	}
+	
 
 	btnTrace = new tButton(gContext, fContext);
 	btnTrace->create(800, 600, 60, 20, "Trace");
@@ -147,6 +152,7 @@ Debug::~Debug() {
 	delete btnStep;
 	delete btnTrace;
 	
+	delete breakPointSet;
 	delete disasmText;
 	for (int i = 0; i < 16; i++) {
 		if (flagName[i]) {

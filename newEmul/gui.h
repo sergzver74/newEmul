@@ -9,6 +9,7 @@
 #include "graph.h"
 #include "fonts.h"
 #include "memory.h"
+#include "breakpoints.h"
 
 
 #define bCLOSEBUTTON		0   ///< вид кнопки закрыть
@@ -443,13 +444,19 @@ private:
 
     Graph* grContext;
     Font* fontContext;
+    Breakpoints* b;
+    std::string asmTxt;
 
     tLabel* bp[20];
 
+    std::string getString(uint8_t n);
+    uint16_t getAddrFromASMString(uint8_t n);
+    void checkExistsBreakpoints();
+
 public:
-    tBreakPointSet(Graph* gc, Font* fc, uint32_t n);
+    tBreakPointSet(Graph* gc, Font* fc, uint32_t n, Breakpoints* bp);
     ~tBreakPointSet();
-    void create(int x, int y, int dx, int dy, int fid, int sz);
+    void create(int x, int y, int dx, int dy, int fid, int sz, std::string s);
     void Visibled(bool vis);
     void Enabled(bool en);
     void getPositionAndSize(int* x, int* y, int* x1, int* y1);
@@ -459,7 +466,11 @@ public:
     void OnClickUp(uint32_t param1, uint32_t param2);
     void OnMove(uint32_t param1, uint32_t param2);
     void OnEndMove(uint32_t param1, uint32_t param2);
+    bool getFocus();
+    std::string getText();
     
+    void changeASMList(std::string txt);
+
     void Destroy();
 };
 
