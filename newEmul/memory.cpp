@@ -135,15 +135,18 @@ bool Memory::getWord(uint16_t addr, uint16_t* data) {
 		*data |= ROMMemory[addr];
 		return false;
 	}
-	else {
+	if (kvazidisk && kvazidisk->getWord(addr, data)) {
+		return false;
+	}
+	//{
 		//if (addr + 1 < maxMemorySize) {
 			*data = memory[0][addr + 1];
 			*data <<= 8;
 			*data |= memory[0][addr];
 			return false;
 		//}
-	}
-	return true;
+	//}
+	//return true;
 }
 
 bool Memory::getWord(uint8_t bank, uint16_t addr, uint16_t* data) {
@@ -235,12 +238,15 @@ bool Memory::setByteToCurrentBank(uint16_t addr, uint8_t data) {
 }
 
 bool Memory::setWord(uint16_t addr, uint16_t data) {
-	if (addr + 1 < maxMemorySize) {
+	if (kvazidisk && kvazidisk->setWord(addr, data)) {
+		return false;
+	}
+	//if (addr + 1 < maxMemorySize) {
 		memory[0][addr] = (uint8_t)(data & 0xFF);
 		memory[0][addr+1] = (uint8_t)(data >> 8);
 		return false;
-	}
-	else return true;
+	//}
+	//else return true;
 }
 
 bool Memory::setWord(uint8_t bank, uint16_t addr, uint16_t data) {

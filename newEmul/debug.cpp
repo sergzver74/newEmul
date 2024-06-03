@@ -269,6 +269,9 @@ bool Debug::eventManager(SDL_Event event) {
 									winEvents[i].param1 = x;
 									winEvents[i].param2 = y;
 								}
+								if (winEvents[i].guiElement == breakPointSet) {
+									updateData();
+								}
 								winEvents[i].guiElement->OnClickUp(winEvents[i].param1, winEvents[i].param2);
 								if (winEvents[i].guiElement == btnTrace) {
 									//uint16_t addr = vcpu->getPC();
@@ -424,7 +427,9 @@ void Debug::updateData() {
 	regs = nregs;
 
 	uint16_t addr = vcpu->getPC();
-	disasmText->changecaption(vcpu->disAsm(&addr, DISASSEMBLERROWS));
+	std::string txtAsm = vcpu->disAsm(&addr, DISASSEMBLERROWS);
+	disasmText->changecaption(txtAsm);
+	breakPointSet->changeASMList(txtAsm);
 	hexViewer->updateData();
 }
 

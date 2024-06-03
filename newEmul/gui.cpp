@@ -1869,7 +1869,7 @@ uint16_t tBreakPointSet::getAddrFromASMString(uint8_t n) {
 void tBreakPointSet::checkExistsBreakpoints() {
     std::string sbp = "";
     sbp += char(0x95);
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < count; i++) {
         uint16_t addr = getAddrFromASMString(i);
         if (b->getAddrStatus(addr)) {
             bp[i]->changecaption(sbp);
@@ -1893,10 +1893,10 @@ void tBreakPointSet::create(int x, int y, int dx, int dy, int fid, int sz, std::
     fontid = fid;
     size = sz;
     asmTxt = s;
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < count; i++) {
         bp[i] = new tLabel(grContext, fontContext);
         bp[i]->create(hx, hy + (i*16), dx, hy + (i * 16) + 16, cLIGHTRED, "");
-        bp[i]->setparam(fontid, size, 0, 0, 0);
+        bp[i]->setparam(fontid, size, 0, alHCENTER, 0);
     }
     checkExistsBreakpoints();
 }
@@ -1914,10 +1914,14 @@ void tBreakPointSet::Visibled(bool vis) {
             grContext->SetFillColor(0x00C0C0C0);
             grContext->SetColor(0x00C0C0C0);
             grContext->bar(hx, hy, hx1, hy1);
+            for (int i = 0; i < count; i++) {
+                bp[i]->Visibled(true);
+            }
         }
         else {
-
-
+            for (int i = 0; i < count; i++) {
+                bp[i]->Visibled(false);
+            }
             if (lbl != NULL)
             {
                 grContext->putImage(hx, hy, lbl);
@@ -1949,7 +1953,17 @@ void tBreakPointSet::OnClick(uint32_t param1, uint32_t param2) {
 }
 
 void tBreakPointSet::OnClickUp(uint32_t param1, uint32_t param2) {
-
+    std::string sbp = "";
+    sbp += char(0x95);
+    uint16_t addr = getAddrFromASMString(param2);
+    if (!b->getAddrStatus(addr)) {
+        b->addAddr(addr, false);
+        bp[param2]->changecaption(sbp);
+    }
+    else {
+        b->deleteAddr(addr);
+        bp[param2]->changecaption("");
+    }
 }
 
 void tBreakPointSet::OnMove(uint32_t param1, uint32_t param2) {
