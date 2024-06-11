@@ -25,6 +25,7 @@ public:
 	void setPortData(uint16_t portNum, uint16_t data);
 	uint16_t getPortData(uint16_t portNum);
 	tPorts getPorts();
+	void updateDsidplayDebug();
 
 private:
 	Keyboard* keyboard;

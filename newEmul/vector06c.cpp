@@ -72,23 +72,27 @@ void Vector06c::timer() {
 						enabled = false;
 						stopNeeded = false;
 						debugUpdateNeeded = true;
+						display->updateDsidplayDebug();
 					}
 					if (debugMode) {
 						if (debugMode == 1) {
 							enabled = false;
 							debugUpdateNeeded = true;
+							display->updateDsidplayDebug();
 						}
 						if (debugMode == 2) {
 							uint16_t curaddr = cpu->getPC();
 							if (curaddr == stopAddr) {
 								enabled = false;
 								debugUpdateNeeded = true;
+								display->updateDsidplayDebug();
 							}
 						}
 						if (breakPoints->checkAddr(cpu->getPC())) {
 							enabled = false;
 							debugMode = 1;
 							debugUpdateNeeded = true;
+							display->updateDsidplayDebug();
 						}
 					}
 				}
@@ -104,70 +108,6 @@ bool Vector06c::udateNeeded() {
 void Vector06c::updated() {
 	debugUpdateNeeded = false;
 }
-
-/*
-void Vector06c::trace() {
-
-	tickCount = 0;
-	do {
-		do {
-			if ((tickCount % 4 == 0) == 0) {
-				display->syncDisplay();
-			}
-			if (!cycle) {
-				cycle = true;
-				commandTicksCount = cpu->execute();
-				recalculateToVector();
-			}
-			if (cycle) {
-				tickCount++;
-				if (tickCount == commandTicksCount) {
-					tickCount = 0;
-					cycle = false;
-				}
-			}
-		} while (tickCount);
-	} while (cpu->isHalted());
-}
-
-void Vector06c::step() {
-	uint16_t curaddr = cpu->getPC();
-	uint8_t iCode;
-	mem->getByte(curaddr, &iCode);
-	switch (iCode)
-	{
-	case 0xCD:
-	case 0xDD:
-	case 0xED:
-	case 0xFD:
-	case 0xC4:
-	case 0xCC:
-	case 0xD4:
-	case 0xDC:
-	case 0xE4:
-	case 0xEC:
-	case 0xF4:
-	case 0xFC: {
-		do {
-			trace();
-			printf("Cur addr: %04X, start addr: %04X\n", cpu->getPC(), curaddr);
-			if ((cpu->getPC() - curaddr) == 3) break;
-		} while (1);
-		break;
-	}
-	default:
-		trace();
-	}
-}
-
-void Vector06c::stepTo(std::string addr) {
-	uint16_t stopAddr = hexToDec(addr);
-	printf("Run to addr: %04X(%d)\n", stopAddr, stopAddr);
-	do {
-		//trace();
-	} while (cpu->getPC() != stopAddr);
-}
-*/
 
 Vector06c::Vector06c() {
 

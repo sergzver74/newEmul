@@ -295,6 +295,10 @@ void VectorDisplay::syncDisplay() {
 	//return result;
 }
 
+void VectorDisplay::updateDsidplayDebug() {
+	updateCallback(renderer, surface);
+}
+
 void VectorDisplay::setPortData(uint16_t portNum, uint16_t data) {
 
 	if (portNum == 0) {
