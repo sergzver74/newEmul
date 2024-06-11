@@ -531,7 +531,7 @@ vKeybParams Vector06c::getVirtualKeyboardParams() {
 	keyb.keys[24].width = 49;
 	keyb.keys[24].heigth = 49;
 	keyb.keys[24].cap = ":\n*";
-	keyb.keys[24].code = 0x33;
+	keyb.keys[24].code = 0x2D;
 
 	keyb.keys[25].x = 10;
 	keyb.keys[25].y = 110;
