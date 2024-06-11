@@ -162,7 +162,7 @@ bool Memory::getWord(uint8_t bank, uint16_t addr, uint16_t* data) {
 
 bool Memory::getWordFromCurrentBank(uint16_t addr, uint16_t* data) {
 	if (currentBank == 0) {
-		if (kvazidisk && kvazidisk->getWord(addr, data)) {
+		if (kvazidisk && kvazidisk->getWordFromStack(addr, data)) {
 			return false;
 		}
 		return getWord(addr, data);
@@ -259,7 +259,7 @@ bool Memory::setWord(uint8_t bank, uint16_t addr, uint16_t data) {
 }
 
 bool Memory::setWordToCurrentBank(uint16_t addr, uint16_t data) {
-	if (kvazidisk && kvazidisk->setWord(addr, data)) {
+	if (kvazidisk && kvazidisk->setWordToStack(addr, data)) {
 		return false;
 	}
 	//if (uint16_t(addr + 1) < maxMemorySize) {

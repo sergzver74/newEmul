@@ -13,8 +13,10 @@ public:
 	tPorts getPorts();
 	bool getByte(uint16_t addr, uint8_t* data);
 	bool getWord(uint16_t addr, uint16_t* data);
+	bool getWordFromStack(uint16_t addr, uint16_t* data);
 	bool setByte(uint16_t addr, uint8_t data);
 	bool setWord(uint16_t addr, uint16_t data);
+	bool setWordToStack(uint16_t addr, uint16_t data);
 
 private:
 	uint8_t port10;
