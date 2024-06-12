@@ -21,6 +21,7 @@ K1818VG93::K1818VG93(string fn) {
 		if (loadImage(fn)) FDDPresent = true; else FDDPresent = false;
 	}
 	else FDDPresent = false;
+	fddNum = 0;
 }
 
 K1818VG93::~K1818VG93() {
@@ -42,6 +43,7 @@ K1818VG93::~K1818VG93() {
 	stepDirection = false;
 	readMode = false;
 	writeMode = false;
+	fddNum = 0;
 }
 
 bool K1818VG93::loadImage(std::string fn) {
@@ -213,6 +215,7 @@ void K1818VG93::setPortData(uint16_t portNum, uint16_t data) {
 		regSelect = data;
 		if (FDDPresent)
 		{
+			fddNum = data & 0x03;
 			fddSide = !((data >> 2) & 0x01);
 			regStatus = 0;
 		}

@@ -40,6 +40,7 @@ private:
 	uint8_t curSect;
 	uint8_t curTrack;
 	uint8_t fddSide;
+	uint8_t fddNum;
 	bool stepDirection;
 
 	uint16_t sectorLength;
