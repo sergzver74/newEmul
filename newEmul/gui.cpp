@@ -801,10 +801,11 @@ void tEdit::OnEndMove(uint32_t param1, uint32_t param2) {
 }
 
 
-tHexViewer::tHexViewer(Graph* gc, Font* fc, Memory* mem, bool rom, uint32_t winId) {
+tHexViewer::tHexViewer(Graph* gc, Font* fc, Machine* comp, uint8_t mType, uint32_t winId) {
     grContext = gc;
     fontContext = fc;
-    memory = mem;
+    //memory = mem;
+    computer = comp;
     win = winId;
     hx = 0;
     hy = 0;
@@ -815,11 +816,46 @@ tHexViewer::tHexViewer(Graph* gc, Font* fc, Memory* mem, bool rom, uint32_t winI
     lbl = NULL;
     visible = false;
     enable = false;
-    isROM = rom;
+    //isROM = rom;
+    memType = mType;
     scrollPosition = 0;
     scrollAdd = 0;
     ln = 0;
-    memPointer = memory->getMemoryPointer(isROM, &startMemAddr, &maxMemAddr);
+    switch (memType)
+    {
+    case 0: memPointer = computer->getMemory()->getMemoryPointer(false, &startMemAddr, &maxMemAddr);
+        break;
+    case 1: memPointer = computer->getMemory()->getMemoryPointer(true, &startMemAddr, &maxMemAddr);
+        break;
+    case 3: if (computer->getKvazMemory()) {
+        memPointer = computer->getKvazMemory()->getMemoryPointer();
+        startMemAddr = 0;
+        maxMemAddr = 65535;
+    }
+        break;
+    case 4: if (computer->getKvazMemory()) {
+        memPointer = computer->getKvazMemory()->getMemoryPointer() + 65536;
+        startMemAddr = 0;
+        maxMemAddr = 65535;
+    }
+          break;
+    case 5: if (computer->getKvazMemory()) {
+        memPointer = computer->getKvazMemory()->getMemoryPointer() + 131072;
+        startMemAddr = 0;
+        maxMemAddr = 65535;
+    }
+    break;
+    case 6: if (computer->getKvazMemory()) {
+        memPointer = computer->getKvazMemory()->getMemoryPointer() + 196608;
+        startMemAddr = 0;
+        maxMemAddr = 65535;
+    }
+          break;
+    default:
+        memPointer = computer->getMemory()->getMemoryPointer(false, &startMemAddr, &maxMemAddr);
+        break;
+    }
+    
     curMemAddr = 0;
     for (int i = 0; i < 16; i++) {
         addrs[i] = new tLabel(grContext, fontContext);
@@ -845,7 +881,7 @@ tHexViewer::~tHexViewer() {
     for (int i = 0; i < 16; i++) delete addrs[i];
     grContext = NULL;
     fontContext = NULL;
-    memory = NULL;
+    computer = NULL;
     memPointer = NULL;
     win = 0;
     hx = 0;
@@ -860,7 +896,8 @@ tHexViewer::~tHexViewer() {
     startMemAddr = 0;
     maxMemAddr = 0;
     curMemAddr = 0;
-    isROM = false;
+    //isROM = false;
+    memType = 0;
     scrollPosition = 0;
     scrollAdd = 0;
     ln = 0;
@@ -869,8 +906,14 @@ tHexViewer::~tHexViewer() {
     scrollPressed = false;
 }
 
+/*
 bool tHexViewer::isROMStatus() {
     return isROM;
+}
+*/
+
+uint8_t tHexViewer::isMemoryType() {
+    return memType;
 }
 
 uint16_t tHexViewer::getLebgth() {

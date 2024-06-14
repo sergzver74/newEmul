@@ -3,6 +3,7 @@
 #include "cpu.h"
 #include "memory.h"
 #include "vkeyboard.h"
+#include "kvaz.h"
 
 #define STOPADDR	0
 #define CHANGEADDR  1
@@ -17,6 +18,7 @@ public:
 	virtual void timer() = 0;
 	virtual CPU *getCPU() = 0;
 	virtual Memory* getMemory() = 0;
+	virtual kvaz* getKvazMemory() = 0;
 	//virtual void trace() = 0;
 	//virtual void step() = 0;
 	//virtual void stepTo(std::string addr) = 0;

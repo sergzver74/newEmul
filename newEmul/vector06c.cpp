@@ -238,6 +238,10 @@ Memory* Vector06c::getMemory() {
 	return mem;
 }
 
+kvaz* Vector06c::getKvazMemory() {
+	return kvazidisk;
+}
+
 void Vector06c::keyDown(uint32_t keyCode) {
 	uint8_t res = keyboard->keyDown(keyCode);
 	if (res == 1) {

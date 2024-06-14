@@ -10,6 +10,7 @@
 #include "fonts.h"
 #include "memory.h"
 #include "breakpoints.h"
+#include "machine.h"
 
 
 #define bCLOSEBUTTON		0   ///< вид кнопки закрыть
@@ -227,7 +228,8 @@ private:
     uint32_t startMemAddr;
     uint32_t maxMemAddr;
     uint16_t curMemAddr;
-    bool isROM;
+    //bool isROM;
+    uint8_t memType;
     uint8_t* memPointer;
     float scrollPosition;
     float scrollAdd;
@@ -243,7 +245,8 @@ private:
 
     Graph* grContext;
     Font* fontContext;
-    Memory* memory;
+    //Memory* memory;
+    Machine* computer;
 
     uint16_t mx;
     uint16_t my;
@@ -252,14 +255,16 @@ private:
     void update();
 
 public:
-    tHexViewer(Graph* gc, Font* fc, Memory* mem, bool rom, uint32_t winId);
+    //tHexViewer(Graph* gc, Font* fc, Memory* mem, bool rom, uint32_t winId);
+    tHexViewer(Graph* gc, Font* fc, Machine* mach, uint8_t mType, uint32_t winId);
     ~tHexViewer();
     void create(int x, int y);
     uint16_t getLebgth();
     void Visibled(bool vis);
     void updateData();
     void Enabled(bool en);
-    bool isROMStatus();
+    //bool isROMStatus();
+    uint8_t isMemoryType();
     bool getFocus();
     std::string getTextElement(int i, int j);
     void setMemoryForTextElement(int i, int j, std::string sData);

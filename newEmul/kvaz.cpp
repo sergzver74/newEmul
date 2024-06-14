@@ -107,3 +107,8 @@ bool kvaz::setWordToStack(uint16_t addr, uint16_t data) {
 	}
 	return false;
 }
+
+uint8_t* kvaz::getMemoryPointer() {
+	uint8_t* m = &mem[0][0];
+	return m;
+}

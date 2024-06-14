@@ -107,7 +107,7 @@ Debug::Debug(Machine* m, std::string name, uint16_t x, uint16_t y, uint16_t w, u
 	addEvent(edtAddr, 3, 0, 0, 0, 0, 0, 0);
 	addEvent(edtAddr, userEventType, 0, 0, 0, 0, 0, 0);
 
-	hexViewer = new tHexViewer(gContext, fContext, computer->getMemory(), true, winID);
+	hexViewer = new tHexViewer(gContext, fContext, computer, 1, winID);
 	hexViewer->create(10, 20);
 	hexViewer->Visibled(true);
 	for (int i = 0; i < 16; i++) {
@@ -120,17 +120,45 @@ Debug::Debug(Machine* m, std::string name, uint16_t x, uint16_t y, uint16_t w, u
 	numEventHexViewerScrol = addEvent(hexViewer, 4, 591, 40, 16, 300, 0, 0);
 
 	btnROM = new tButton(gContext, fContext);
-	btnROM->create(200, 370, 60, 25, "ROM");
+	btnROM->create(200, 370, 40, 25, "ROM");
 	btnROM->Visibled(true);
-	addEvent(btnROM, 1, 200, 370, 60, 25, 0, 0);
-	addEvent(btnROM, 2, 200, 370, 60, 25, 0, 0);
+	addEvent(btnROM, 1, 200, 370, 40, 25, 0, 0);
+	addEvent(btnROM, 2, 200, 370, 40, 25, 0, 0);
 
 	btnRAM = new tButton(gContext, fContext);
-	btnRAM->create(300, 370, 60, 25, "RAM");
+	btnRAM->create(250, 370, 40, 25, "RAM");
 	btnRAM->Visibled(true);
-	addEvent(btnRAM, 1, 300, 370, 60, 25, 0, 0);
-	addEvent(btnRAM, 2, 300, 370, 60, 25, 0, 0);
+	addEvent(btnRAM, 1, 250, 370, 40, 25, 0, 0);
+	addEvent(btnRAM, 2, 250, 370, 40, 25, 0, 0);
 
+	if (computer->getKvazMemory()) {
+
+		btnKvaz1 = new tButton(gContext, fContext);
+		btnKvaz1->create(300, 370, 40, 25, "KD1");
+		btnKvaz1->Visibled(true);
+		addEvent(btnKvaz1, 1, 300, 370, 40, 25, 0, 0);
+		addEvent(btnKvaz1, 2, 300, 370, 40, 25, 0, 0);
+
+		btnKvaz2 = new tButton(gContext, fContext);
+		btnKvaz2->create(350, 370, 40, 25, "KD2");
+		btnKvaz2->Visibled(true);
+		addEvent(btnKvaz2, 1, 350, 370, 40, 25, 0, 0);
+		addEvent(btnKvaz2, 2, 350, 370, 40, 25, 0, 0);
+
+		btnKvaz3 = new tButton(gContext, fContext);
+		btnKvaz3->create(400, 370, 40, 25, "KD3");
+		btnKvaz3->Visibled(true);
+		addEvent(btnKvaz3, 1, 400, 370, 40, 25, 0, 0);
+		addEvent(btnKvaz3, 2, 400, 370, 40, 25, 0, 0);
+
+		btnKvaz4 = new tButton(gContext, fContext);
+		btnKvaz4->create(450, 370, 40, 25, "KD4");
+		btnKvaz4->Visibled(true);
+		addEvent(btnKvaz4, 1, 450, 370, 40, 25, 0, 0);
+		addEvent(btnKvaz4, 2, 450, 370, 40, 25, 0, 0);
+
+	}
+	
 	tempEdit = NULL;
 
 	updateWindow();
@@ -142,6 +170,13 @@ Debug::~Debug() {
 	if (tempEdit != NULL) {
 		delete tempEdit;
 		tempEdit = NULL;
+	}
+
+	if (computer->getKvazMemory()) {
+		delete btnKvaz4;
+		delete btnKvaz3;
+		delete btnKvaz2;
+		delete btnKvaz1;
 	}
 
 	delete btnRAM;
@@ -303,10 +338,10 @@ bool Debug::eventManager(SDL_Event event) {
 								}
 								if (winEvents[i].guiElement == btnROM) {
 									edtAddr->lostFocus();
-									if (!hexViewer->isROMStatus()) {
+									if (hexViewer->isMemoryType() != 1) {
 										delete hexViewer;
 										hexViewer = NULL;
-										hexViewer = new tHexViewer(gContext, fContext, computer->getMemory(), true, winID);
+										hexViewer = new tHexViewer(gContext, fContext, computer, 1, winID);
 										hexViewer->create(10, 20);
 										hexViewer->Visibled(true);
 										winEvents[numEventHexViewerClick].guiElement = hexViewer;
@@ -317,10 +352,66 @@ bool Debug::eventManager(SDL_Event event) {
 								}
 								if (winEvents[i].guiElement == btnRAM) {
 									edtAddr->lostFocus();
-									if (hexViewer->isROMStatus()) {
+									if (hexViewer->isMemoryType() != 0) {
 										delete hexViewer;
 										hexViewer = NULL;
-										hexViewer = new tHexViewer(gContext, fContext, computer->getMemory(), false, winID);
+										hexViewer = new tHexViewer(gContext, fContext, computer, 0, winID);
+										hexViewer->create(10, 20);
+										hexViewer->Visibled(true);
+										winEvents[numEventHexViewerClick].guiElement = hexViewer;
+										winEvents[numEventHexViewerClickUp].guiElement = hexViewer;
+										winEvents[numEventHexViewerScrol].guiElement = hexViewer;
+										updateData();
+									}
+								}
+								if (winEvents[i].guiElement == btnKvaz1) {
+									edtAddr->lostFocus();
+									if (hexViewer->isMemoryType() != 3) {
+										delete hexViewer;
+										hexViewer = NULL;
+										hexViewer = new tHexViewer(gContext, fContext, computer, 3, winID);
+										hexViewer->create(10, 20);
+										hexViewer->Visibled(true);
+										winEvents[numEventHexViewerClick].guiElement = hexViewer;
+										winEvents[numEventHexViewerClickUp].guiElement = hexViewer;
+										winEvents[numEventHexViewerScrol].guiElement = hexViewer;
+										updateData();
+									}
+								}
+								if (winEvents[i].guiElement == btnKvaz2) {
+									edtAddr->lostFocus();
+									if (hexViewer->isMemoryType() != 4) {
+										delete hexViewer;
+										hexViewer = NULL;
+										hexViewer = new tHexViewer(gContext, fContext, computer, 4, winID);
+										hexViewer->create(10, 20);
+										hexViewer->Visibled(true);
+										winEvents[numEventHexViewerClick].guiElement = hexViewer;
+										winEvents[numEventHexViewerClickUp].guiElement = hexViewer;
+										winEvents[numEventHexViewerScrol].guiElement = hexViewer;
+										updateData();
+									}
+								}
+								if (winEvents[i].guiElement == btnKvaz3) {
+									edtAddr->lostFocus();
+									if (hexViewer->isMemoryType() != 5) {
+										delete hexViewer;
+										hexViewer = NULL;
+										hexViewer = new tHexViewer(gContext, fContext, computer, 5, winID);
+										hexViewer->create(10, 20);
+										hexViewer->Visibled(true);
+										winEvents[numEventHexViewerClick].guiElement = hexViewer;
+										winEvents[numEventHexViewerClickUp].guiElement = hexViewer;
+										winEvents[numEventHexViewerScrol].guiElement = hexViewer;
+										updateData();
+									}
+								}
+								if (winEvents[i].guiElement == btnKvaz4) {
+									edtAddr->lostFocus();
+									if (hexViewer->isMemoryType() != 6) {
+										delete hexViewer;
+										hexViewer = NULL;
+										hexViewer = new tHexViewer(gContext, fContext, computer, 6, winID);
 										hexViewer->create(10, 20);
 										hexViewer->Visibled(true);
 										winEvents[numEventHexViewerClick].guiElement = hexViewer;

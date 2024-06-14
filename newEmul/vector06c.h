@@ -38,6 +38,7 @@ public:
 	//void step();
 	//void stepTo(std::string addr);
 	Memory* getMemory();
+	kvaz* getKvazMemory();
 	void keyDown(uint32_t keyCode);
 	void keyUp(uint32_t keyCode);
 	void loadProgramToMemory(std::string url, bool addr0);
