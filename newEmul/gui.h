@@ -227,7 +227,7 @@ private:
     uint32_t win;
     uint32_t startMemAddr;
     uint32_t maxMemAddr;
-    uint16_t curMemAddr;
+    uint32_t curMemAddr;
     //bool isROM;
     uint8_t memType;
     uint8_t* memPointer;

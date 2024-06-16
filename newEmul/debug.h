@@ -37,10 +37,7 @@ private:
 	tButton* btnROM;
 	tButton* btnRAM;
 
-	tButton* btnKvaz1;
-	tButton* btnKvaz2;
-	tButton* btnKvaz3;
-	tButton* btnKvaz4;
+	tButton* btnKvaz;
 
 	uint16_t numEventHexViewerClick;
 	uint16_t numEventHexViewerClickUp;

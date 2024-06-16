@@ -27,6 +27,13 @@ std::string decToHexWord(uint16_t b) {
 	return res;
 }
 
+std::string decToHex5(uint32_t b) {
+	uint8_t buf[16];
+	sprintf_s((char*)buf, 16, "%05X\0", b);
+	std::string res((char*)buf);
+	return res;
+}
+
 std::string decToHexDWord(uint32_t b) {
 	uint8_t buf[16];
 	sprintf_s((char*)buf, 16, "%08X\0", b);

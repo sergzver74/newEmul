@@ -827,30 +827,12 @@ tHexViewer::tHexViewer(Graph* gc, Font* fc, Machine* comp, uint8_t mType, uint32
         break;
     case 1: memPointer = computer->getMemory()->getMemoryPointer(true, &startMemAddr, &maxMemAddr);
         break;
-    case 3: if (computer->getKvazMemory()) {
+    case 2: if (computer->getKvazMemory()) {
         memPointer = computer->getKvazMemory()->getMemoryPointer();
         startMemAddr = 0;
-        maxMemAddr = 65535;
+        maxMemAddr = 262144;
     }
         break;
-    case 4: if (computer->getKvazMemory()) {
-        memPointer = computer->getKvazMemory()->getMemoryPointer() + 65536;
-        startMemAddr = 0;
-        maxMemAddr = 65535;
-    }
-          break;
-    case 5: if (computer->getKvazMemory()) {
-        memPointer = computer->getKvazMemory()->getMemoryPointer() + 131072;
-        startMemAddr = 0;
-        maxMemAddr = 65535;
-    }
-    break;
-    case 6: if (computer->getKvazMemory()) {
-        memPointer = computer->getKvazMemory()->getMemoryPointer() + 196608;
-        startMemAddr = 0;
-        maxMemAddr = 65535;
-    }
-          break;
     default:
         memPointer = computer->getMemory()->getMemoryPointer(false, &startMemAddr, &maxMemAddr);
         break;
@@ -928,7 +910,12 @@ void tHexViewer::create(int x, int y) {
     hx1 = hx + dx;
     hy1 = hy + dy;
     for (int i = 0; i < 16; i++) {
-        addrs[i]->create(hx + 10, hy + (20 * i) + 10, 36, 20, cBLACK, decToHexWord(i * 16));
+        if (memType < 2) {
+            addrs[i]->create(hx + 10, hy + (20 * i) + 10, 36, 20, cBLACK, decToHexWord(i * 16));
+        }
+        else {
+            addrs[i]->create(hx + 10, hy + (20 * i) + 10, 40, 20, cBLACK, decToHex5(i * 16));
+        }
         addrs[i]->setparam(0, 1, 0, 0, 0);
     }
     for (int i = 0; i < 16; i++) 
@@ -1014,7 +1001,12 @@ void tHexViewer::Visibled(bool vis) {
 }
 
 void tHexViewer::update() {
-    for (int i = 0; i < 16; i++) addrs[i]->changecaption(decToHexWord(curMemAddr + i * 16));
+    if (memType < 2) {
+        for (int i = 0; i < 16; i++) addrs[i]->changecaption(decToHexWord(curMemAddr + i * 16));
+    }
+    else {
+        for (int i = 0; i < 16; i++) addrs[i]->changecaption(decToHex5(curMemAddr + i * 16));
+    }
     for (int i = 0; i < 16; i++)
         for (int j = 0; j < 16; j++) {
             datas[i][j]->changeColor(cBLACK);
