@@ -902,31 +902,32 @@ uint16_t tHexViewer::getLebgth() {
     return ln;
 }
 
-void tHexViewer::create(int x, int y) {
+void tHexViewer::create(int x, int y, uint32_t cp, uint32_t sp) {
     hx = x;
     hy = y;
     dx = 600;
     dy = 340;
     hx1 = hx + dx;
     hy1 = hy + dy;
+    curMemAddr = cp;
     for (int i = 0; i < 16; i++) {
         if (memType < 2) {
-            addrs[i]->create(hx + 10, hy + (20 * i) + 10, 36, 20, cBLACK, decToHexWord(i * 16));
+            addrs[i]->create(hx + 10, hy + (20 * i) + 10, 36, 20, cBLACK, decToHexWord(curMemAddr + i * 16));
         }
         else {
-            addrs[i]->create(hx + 10, hy + (20 * i) + 10, 40, 20, cBLACK, decToHex5(i * 16));
+            addrs[i]->create(hx + 10, hy + (20 * i) + 10, 40, 20, cBLACK, decToHex5(curMemAddr + i * 16));
         }
         addrs[i]->setparam(0, 1, 0, 0, 0);
     }
     for (int i = 0; i < 16; i++) 
         for (int j = 0; j < 16; j++) {
-            datas[i][j]->create(hx + 58 + (24 * j), hy + (20 * i) + 10, 20, 20, cBLACK, decToHexByte(memPointer[i*16+j]));
+            datas[i][j]->create(hx + 58 + (24 * j), hy + (20 * i) + 10, 20, 20, cBLACK, decToHexByte(memPointer[curMemAddr + i*16+j]));
             datas[i][j]->setparam(0, 1, 0, 0, 0);
     }
     for (int i = 0; i < 16; i++) {
         std::string txt = "";
         for (int j = 0; j < 16; j++) {
-            if (memPointer[i * 16 + j] < 0x20) txt += "."; else txt += memPointer[i * 16 + j];
+            if (memPointer[curMemAddr + i * 16 + j] < 0x20) txt += "."; else txt += memPointer[curMemAddr + i * 16 + j];
         }
         stringDatas[i]->create(hx + 450, hy + (20 * i) + 10, 132, 20, cBLACK, txt);
     }
@@ -944,8 +945,9 @@ void tHexViewer::create(int x, int y) {
     else {
         scrollAdd = 1.0;
     }
-    bMiddle->create(hx1 - 19, hy + 20, 16, ln, "");
-    scrollPosition = hy + 20;
+    scrollPosition = sp;
+    if (!sp) scrollPosition = hy + 20; else scrollPosition = sp;
+    bMiddle->create(hx1 - 19, (int)round(scrollPosition), 16, ln, "");
 }
 
 
@@ -1058,6 +1060,14 @@ void tHexViewer::getPositionAndSize(int* x, int* y, int* x1, int* y1) {
     *y = hy;
     *x1 = hx1;
     *y1 = hy1;
+}
+
+uint32_t tHexViewer::getCurrentPosition() {
+    return curMemAddr;
+}
+
+uint32_t tHexViewer::getScrollPosition() {
+    return scrollPosition;
 }
 
 void tHexViewer::Enabled(bool en) {

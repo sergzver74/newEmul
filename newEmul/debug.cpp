@@ -108,7 +108,7 @@ Debug::Debug(Machine* m, std::string name, uint16_t x, uint16_t y, uint16_t w, u
 	addEvent(edtAddr, userEventType, 0, 0, 0, 0, 0, 0);
 
 	hexViewer = new tHexViewer(gContext, fContext, computer, 1, winID);
-	hexViewer->create(10, 20);
+	hexViewer->create(10, 20, 0, 0);
 	hexViewer->Visibled(true);
 	for (int i = 0; i < 16; i++) {
 		for (int j = 0; j < 16; j++) {
@@ -141,6 +141,10 @@ Debug::Debug(Machine* m, std::string name, uint16_t x, uint16_t y, uint16_t w, u
 
 	}
 	
+	for (int i = 0; i < 3; i++) {
+		hexViewerPositions[i] = 0;
+		hexViewerScrollPositions[i] = 0;
+	}
 	tempEdit = NULL;
 
 	updateWindow();
@@ -149,6 +153,11 @@ Debug::Debug(Machine* m, std::string name, uint16_t x, uint16_t y, uint16_t w, u
 Debug::~Debug() {
 	printf("Destroy DEBUG window\n");
 	
+	for (int i = 0; i < 3; i++) {
+		hexViewerPositions[i] = 0;
+		hexViewerScrollPositions[i] = 0;
+	}
+
 	if (tempEdit != NULL) {
 		delete tempEdit;
 		tempEdit = NULL;
@@ -318,10 +327,12 @@ bool Debug::eventManager(SDL_Event event) {
 								if (winEvents[i].guiElement == btnROM) {
 									edtAddr->lostFocus();
 									if (hexViewer->isMemoryType() != 1) {
+										hexViewerPositions[hexViewer->isMemoryType()] = hexViewer->getCurrentPosition();
+										hexViewerScrollPositions[hexViewer->isMemoryType()] = hexViewer->getScrollPosition();
 										delete hexViewer;
 										hexViewer = NULL;
 										hexViewer = new tHexViewer(gContext, fContext, computer, 1, winID);
-										hexViewer->create(10, 20);
+										hexViewer->create(10, 20, hexViewerPositions[1], hexViewerScrollPositions[1]);
 										hexViewer->Visibled(true);
 										winEvents[numEventHexViewerClick].guiElement = hexViewer;
 										winEvents[numEventHexViewerClickUp].guiElement = hexViewer;
@@ -332,10 +343,12 @@ bool Debug::eventManager(SDL_Event event) {
 								if (winEvents[i].guiElement == btnRAM) {
 									edtAddr->lostFocus();
 									if (hexViewer->isMemoryType() != 0) {
+										hexViewerPositions[hexViewer->isMemoryType()] = hexViewer->getCurrentPosition();
+										hexViewerScrollPositions[hexViewer->isMemoryType()] = hexViewer->getScrollPosition();
 										delete hexViewer;
 										hexViewer = NULL;
 										hexViewer = new tHexViewer(gContext, fContext, computer, 0, winID);
-										hexViewer->create(10, 20);
+										hexViewer->create(10, 20, hexViewerPositions[0], hexViewerScrollPositions[0]);
 										hexViewer->Visibled(true);
 										winEvents[numEventHexViewerClick].guiElement = hexViewer;
 										winEvents[numEventHexViewerClickUp].guiElement = hexViewer;
@@ -346,10 +359,12 @@ bool Debug::eventManager(SDL_Event event) {
 								if (winEvents[i].guiElement == btnKvaz) {
 									edtAddr->lostFocus();
 									if (hexViewer->isMemoryType() != 2) {
+										hexViewerPositions[hexViewer->isMemoryType()] = hexViewer->getCurrentPosition();
+										hexViewerScrollPositions[hexViewer->isMemoryType()] = hexViewer->getScrollPosition();
 										delete hexViewer;
 										hexViewer = NULL;
 										hexViewer = new tHexViewer(gContext, fContext, computer, 2, winID);
-										hexViewer->create(10, 20);
+										hexViewer->create(10, 20, hexViewerPositions[2], hexViewerScrollPositions[2]);
 										hexViewer->Visibled(true);
 										winEvents[numEventHexViewerClick].guiElement = hexViewer;
 										winEvents[numEventHexViewerClickUp].guiElement = hexViewer;

@@ -46,6 +46,8 @@ private:
 	tEdit* tempEdit;
 	uint16_t tempEditKeyEventNom;
 	uint16_t tempEditCursorEventNum;
+	uint32_t hexViewerPositions[3];
+	uint32_t hexViewerScrollPositions[3];
 
 	Breakpoints* breakPoints;
 	tBreakPointSet* breakPointSet;

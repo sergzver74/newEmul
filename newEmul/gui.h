@@ -258,13 +258,15 @@ public:
     //tHexViewer(Graph* gc, Font* fc, Memory* mem, bool rom, uint32_t winId);
     tHexViewer(Graph* gc, Font* fc, Machine* mach, uint8_t mType, uint32_t winId);
     ~tHexViewer();
-    void create(int x, int y);
+    void create(int x, int y, uint32_t cp, uint32_t sp);
     uint16_t getLebgth();
     void Visibled(bool vis);
     void updateData();
     void Enabled(bool en);
     //bool isROMStatus();
     uint8_t isMemoryType();
+    uint32_t getCurrentPosition();
+    uint32_t getScrollPosition();
     bool getFocus();
     std::string getTextElement(int i, int j);
     void setMemoryForTextElement(int i, int j, std::string sData);
