@@ -22,12 +22,13 @@ public:
 private:
 	uint8_t port10;
 
-	uint8_t currentScreenPage;
-	uint8_t currentStackPage;
+	uint32_t currentScreenPage;
+	uint32_t currentStackPage;
 	bool quaziDiskStackMode;
 	bool quaziDiskScreenModeAD;
 
-	uint8_t mem[4][65536];
+	//uint8_t mem[4][65536];
+	uint8_t mem[262144];
 
 };
 

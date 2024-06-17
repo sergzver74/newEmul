@@ -7,11 +7,14 @@ kvaz::kvaz()
 	currentStackPage = 0;
 	quaziDiskStackMode = false;
 	quaziDiskScreenModeAD = false;
+	/*
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 65536; j++) {
 			mem[i][j] = 0;
 		}
 	}
+	*/
+	for (int i = 0; i < 262144; i++) mem[i] = 0;
 }
 
 kvaz::~kvaz()
@@ -49,7 +52,8 @@ tPorts kvaz::getPorts() {
 bool kvaz::getByte(uint16_t addr, uint8_t* data) {
 	if (quaziDiskScreenModeAD) {
 		if (addr >= 0xA000 && addr <= 0xDFFF) {
-			*data = mem[currentScreenPage][addr];
+			//*data = mem[currentScreenPage][addr];
+			*data = mem[(currentScreenPage << 16) + addr];
 			return true;
 		}
 	}
@@ -59,9 +63,12 @@ bool kvaz::getByte(uint16_t addr, uint8_t* data) {
 bool kvaz::getWord(uint16_t addr, uint16_t* data) {
 	if (quaziDiskScreenModeAD) {
 		if (addr >= 0xA000 && addr <= 0xDFFF) {
-			*data = mem[currentScreenPage][addr + 1];
+			//*data = mem[currentScreenPage][addr + 1];
+			//*data <<= 8;
+			//*data |= mem[currentScreenPage][addr];
+			*data = mem[(currentScreenPage << 16) + addr + 1];
 			*data <<= 8;
-			*data |= mem[currentScreenPage][addr];
+			*data |= mem[(currentScreenPage << 16) + addr];
 			return true;
 		}
 	}
@@ -70,9 +77,12 @@ bool kvaz::getWord(uint16_t addr, uint16_t* data) {
 
 bool kvaz::getWordFromStack(uint16_t addr, uint16_t* data) {
 	if (quaziDiskStackMode) {
-		*data = mem[currentStackPage][addr + 1];
+		//*data = mem[currentStackPage][addr + 1];
+		//*data <<= 8;
+		//*data |= mem[currentStackPage][addr];
+		*data = mem[(currentStackPage << 16) + addr + 1];
 		*data <<= 8;
-		*data |= mem[currentStackPage][addr];
+		*data |= mem[(currentStackPage << 16) + addr];
 		return true;
 	}
 	return false;
@@ -81,7 +91,8 @@ bool kvaz::getWordFromStack(uint16_t addr, uint16_t* data) {
 bool kvaz::setByte(uint16_t addr, uint8_t data) {
 	if (quaziDiskScreenModeAD) {
 		if (addr >= 0xA000 && addr <= 0xDFFF) {
-			mem[currentScreenPage][addr] = data;
+			//mem[currentScreenPage][addr] = data;
+			mem[(currentScreenPage << 16) + addr] = data;
 			return true;
 		}
 	}
@@ -91,8 +102,10 @@ bool kvaz::setByte(uint16_t addr, uint8_t data) {
 bool kvaz::setWord(uint16_t addr, uint16_t data) {
 	if (quaziDiskScreenModeAD) {
 		if (addr >= 0xA000 && addr <= 0xDFFF) {
-			mem[currentScreenPage][addr] = (uint8_t)(data & 0xFF);
-			mem[currentScreenPage][addr + 1] = (uint8_t)(data >> 8);
+			//mem[currentScreenPage][addr] = (uint8_t)(data & 0xFF);
+			//mem[currentScreenPage][addr + 1] = (uint8_t)(data >> 8);
+			mem[(currentScreenPage << 16) + addr] = (uint8_t)(data & 0xFF);
+			mem[(currentScreenPage << 16) + addr + 1] = (uint8_t)(data >> 8);
 			return true;
 		}
 	}
@@ -101,14 +114,14 @@ bool kvaz::setWord(uint16_t addr, uint16_t data) {
 
 bool kvaz::setWordToStack(uint16_t addr, uint16_t data) {
 	if (quaziDiskStackMode) {
-		mem[currentStackPage][addr] = (uint8_t)(data & 0xFF);
-		mem[currentStackPage][addr + 1] = (uint8_t)(data >> 8);
+		mem[(currentStackPage << 16) + addr] = (uint8_t)(data & 0xFF);
+		mem[(currentStackPage << 16) + addr + 1] = (uint8_t)(data >> 8);
 		return true;
 	}
 	return false;
 }
 
 uint8_t* kvaz::getMemoryPointer() {
-	uint8_t* m = &mem[0][0];
+	uint8_t* m = &mem[0];
 	return m;
 }
