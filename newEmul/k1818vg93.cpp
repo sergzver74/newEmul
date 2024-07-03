@@ -126,7 +126,16 @@ void K1818VG93::busy(bool en) {
 void K1818VG93::setPortData(uint16_t portNum, uint16_t data) {
 	switch (portNum) {
 	case 0x18:
-
+		regData = data & 0xFF;
+		if (writeMode) {
+			curCount--;
+			if (curCount == 0)
+			{
+				regStatus = 0;
+				readMode = false;
+			}
+			image[curWritePointer++] = regData;
+		}
 		break;
 	case 0x19:
 		regSect = data & 0xFF;
@@ -151,12 +160,13 @@ void K1818VG93::setPortData(uint16_t portNum, uint16_t data) {
 				if ((data & 0xFF) >> 4 == 1) {
 					if (regTrack < 80) {
 						search(false);
-						curTrack = regTrack;
+						curTrack = regData;
 					}
 					else {
 						search(true);
 						curTrack = 79;
 					}
+					regTrack = curTrack;
 				}
 				if ((data & 0xFF) >> 5 == 1) {
 					if (!stepDirection) {
@@ -204,7 +214,7 @@ void K1818VG93::setPortData(uint16_t portNum, uint16_t data) {
 					impulse(true);
 					busy(true);
 					curCount = sectorLength;
-					curReadPointer = (regSect - 1) * sectorLength + inSide * (fddSide * 5120) + curTrack * 10240;
+					curWritePointer = (regSect - 1) * sectorLength + inSide * (fddSide * 5120) + curTrack * 10240;
 				}
 
 				ready(false);

@@ -46,6 +46,7 @@ private:
 	uint16_t sectorLength;
 	uint8_t inSide;
 	uint32_t curReadPointer;
+	uint32_t curWritePointer;
 	uint32_t curCount;
 	bool readMode;
 	bool writeMode;
