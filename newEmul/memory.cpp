@@ -173,6 +173,17 @@ bool Memory::getWordFromCurrentBank(uint16_t addr, uint16_t* data) {
 	return false;
 }
 
+bool Memory::getWordFromStack(uint16_t addr, uint16_t* data) {
+	if (kvazidisk && kvazidisk->getWordFromStack(addr, data)) {
+		return false;
+	}
+	*data = memory[0][addr + 1];
+	*data <<= 8;
+	*data |= memory[0][addr];
+	return false;
+}
+
+
 bool Memory::setByte(uint16_t addr, uint8_t data) {
 	if (kvazidisk && kvazidisk->setByte(addr, data)) {
 		return false;
@@ -268,6 +279,15 @@ bool Memory::setWordToCurrentBank(uint16_t addr, uint16_t data) {
 		return false;
 	//}
 	//else return true;
+}
+
+bool Memory::setWordToStack(uint16_t addr, uint16_t data) {
+	if (kvazidisk && kvazidisk->setWordToStack(addr, data)) {
+		return false;
+	}
+	memory[0][addr] = (uint8_t)(data & 0xFF);
+	memory[0][addr + 1] = (uint8_t)(data >> 8);
+	return false;
 }
 
 uint8_t* Memory::getVideoMemoryPointer() {

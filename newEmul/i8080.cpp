@@ -1181,14 +1181,14 @@ uint8_t i8080::execute() {
 	case 0xC0: // {rnz}
 		if (((fl & 0x40) >> 6) == 0)
 		{
-			mRes = memory->getWordFromCurrentBank(sp, &pc);
+			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
 			NumTicks = 11;
 		}
 		else NumTicks = 5;
 		break;
 	case 0xC1: // {pop b}
-		mRes = memory->getWordFromCurrentBank(sp, &bc.r16);
+		mRes = memory->getWordFromStack(sp, &bc.r16);
 		sp += 2;
 		NumTicks = 10;
 		break;
@@ -1209,7 +1209,7 @@ uint8_t i8080::execute() {
 		if (((fl & 0x40) >> 6) == 0)
 		{
 			sp -= 2;
-			mRes = memory->setWordToCurrentBank(sp, pc);
+			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
@@ -1217,7 +1217,7 @@ uint8_t i8080::execute() {
 		break;
 	case 0xC5: // {push b}
 		sp -= 2;
-		mRes = memory->setWordToCurrentBank(sp, bc.r16);
+		mRes = memory->setWordToStack(sp, bc.r16);
 		NumTicks = 11;
 		break;
 	case 0xC6: // {adi}
@@ -1227,14 +1227,14 @@ uint8_t i8080::execute() {
 		break;
 	case 0xC7: // {rst 0}
 		sp -= 2;;
-		mRes = memory->setWordToCurrentBank(sp, pc);
+		mRes = memory->setWordToStack(sp, pc);
 		pc = 0;
 		NumTicks = 11;
 		break;
 	case 0xC8: // {rz}
 		if (((fl & 0x40) >> 6) == 1)
 		{
-			mRes = memory->getWordFromCurrentBank(sp, &pc);
+			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
 			NumTicks = 11;
 		}
@@ -1242,7 +1242,7 @@ uint8_t i8080::execute() {
 		break;
 	case 0xC9:
 	case 0xD9: // {ret}
-		mRes = memory->getWordFromCurrentBank(sp, &pc);
+		mRes = memory->getWordFromStack(sp, &pc);
 		sp += 2;
 		NumTicks = 10;
 		break;
@@ -1258,7 +1258,7 @@ uint8_t i8080::execute() {
 		if (((fl & 0x40) >> 6) == 1)
 		{
 			sp -= 2;
-			mRes = memory->setWordToCurrentBank(sp, pc);
+			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
@@ -1271,7 +1271,7 @@ uint8_t i8080::execute() {
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
 		sp -= 2;
-		mRes = memory->setWordToCurrentBank(sp, pc);
+		mRes = memory->setWordToStack(sp, pc);
 		pc = addr;
 		NumTicks = 17;
 		break;
@@ -1282,21 +1282,21 @@ uint8_t i8080::execute() {
 		break;
 	case 0xCF: // {rst 1}
 		sp -= 2;;
-		mRes = memory->setWordToCurrentBank(sp, pc);
+		mRes = memory->setWordToStack(sp, pc);
 		pc = 8;
 		NumTicks = 11;
 		break;
 	case 0xD0: // {rnc}
 		if ((fl & 0x01) == 0)
 		{
-			mRes = memory->getWordFromCurrentBank(sp, &pc);
+			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
 			NumTicks = 11;
 		}
 		else NumTicks = 5;
 		break;
 	case 0xD1: // {pop d}
-		mRes = memory->getWordFromCurrentBank(sp, &de.r16);
+		mRes = memory->getWordFromStack(sp, &de.r16);
 		sp += 2;
 		NumTicks = 10;
 		break;
@@ -1318,7 +1318,7 @@ uint8_t i8080::execute() {
 		if ((fl & 0x01) == 0)
 		{
 			sp -= 2;
-			mRes = memory->setWordToCurrentBank(sp, pc);
+			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
@@ -1326,7 +1326,7 @@ uint8_t i8080::execute() {
 		break;
 	case 0xD5: // {push d}
 		sp -= 2;
-		mRes = memory->setWordToCurrentBank(sp, de.r16);
+		mRes = memory->setWordToStack(sp, de.r16);
 		NumTicks = 11;
 		break;
 	case 0xD6: // {sui}
@@ -1336,14 +1336,14 @@ uint8_t i8080::execute() {
 		break;
 	case 0xD7: // {rst 2}
 		sp -= 2;;
-		mRes = memory->setWordToCurrentBank(sp, pc);
+		mRes = memory->setWordToStack(sp, pc);
 		pc = 16;
 		NumTicks = 11;
 		break;
 	case 0xD8: // {rc}
 		if ((fl & 0x01) == 1)
 		{
-			mRes = memory->getWordFromCurrentBank(sp, &pc);
+			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
 			NumTicks = 11;
 		}
@@ -1367,7 +1367,7 @@ uint8_t i8080::execute() {
 		if ((fl & 0x01) == 1)
 		{
 			sp -= 2;
-			mRes = memory->setWordToCurrentBank(sp, pc);
+			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
@@ -1380,21 +1380,21 @@ uint8_t i8080::execute() {
 		break;
 	case 0xDF: // {rst 3}
 		sp -= 2;;
-		mRes = memory->setWordToCurrentBank(sp, pc);
+		mRes = memory->setWordToStack(sp, pc);
 		pc = 24;
 		NumTicks = 11;
 		break;
 	case 0xE0: // {rpo}
 		if (((fl & 0x04) >> 2) == 0)
 		{
-			mRes = memory->getWordFromCurrentBank(sp, &pc);
+			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
 			NumTicks = 11;
 		}
 		else NumTicks = 5;
 		break;
 	case 0xE1: // {pop h}
-		mRes = memory->getWordFromCurrentBank(sp, &hl.r16);
+		mRes = memory->getWordFromStack(sp, &hl.r16);
 		sp += 2;
 		NumTicks = 10;
 		break;
@@ -1405,8 +1405,8 @@ uint8_t i8080::execute() {
 		NumTicks = 10;
 		break;
 	case 0xE3: // {xthl}
-		mRes = memory->getWordFromCurrentBank(sp, &addr);
-		mRes = memory->setWordToCurrentBank(sp, hl.r16);
+		mRes = memory->getWordFromStack(sp, &addr);
+		mRes = memory->setWordToStack(sp, hl.r16);
 		hl.r16 = addr;
 		NumTicks = 18;
 		break;
@@ -1416,7 +1416,7 @@ uint8_t i8080::execute() {
 		if (((fl & 0x04) >> 2) == 0)
 		{
 			sp -= 2;
-			mRes = memory->setWordToCurrentBank(sp, pc);
+			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
@@ -1424,7 +1424,7 @@ uint8_t i8080::execute() {
 		break;
 	case 0xE5: // {push h}
 		sp -= 2;
-		mRes = memory->setWordToCurrentBank(sp, hl.r16);
+		mRes = memory->setWordToStack(sp, hl.r16);
 		NumTicks = 11;
 		break;
 	case 0xE6: // {ani}
@@ -1439,14 +1439,14 @@ uint8_t i8080::execute() {
 		break;
 	case 0xE7: // {rst 4}
 		sp -= 2;;
-		mRes = memory->setWordToCurrentBank(sp, pc);
+		mRes = memory->setWordToStack(sp, pc);
 		pc = 32;
 		NumTicks = 11;
 		break;
 	case 0xE8: // {rpe}
 		if (((fl & 0x04) >> 2) == 1)
 		{
-			mRes = memory->getWordFromCurrentBank(sp, &pc);
+			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
 			NumTicks = 11;
 		}
@@ -1472,7 +1472,7 @@ uint8_t i8080::execute() {
 		if (((fl & 0x04) >> 2) == 1)
 		{
 			sp -= 2;
-			mRes = memory->setWordToCurrentBank(sp, pc);
+			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
@@ -1488,21 +1488,21 @@ uint8_t i8080::execute() {
 		break;
 	case 0xEF: // {rst 5}
 		sp -= 2;;
-		mRes = memory->setWordToCurrentBank(sp, pc);
+		mRes = memory->setWordToStack(sp, pc);
 		pc = 40;
 		NumTicks = 11;
 		break;
 	case 0xF0: // {rp}
 		if (((fl & 0x80) >> 7) == 0)
 		{
-			mRes = memory->getWordFromCurrentBank(sp, &pc);
+			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
 			NumTicks = 11;
 		}
 		else NumTicks = 5;
 		break;
 	case 0xF1: // {pop psw}
-		mRes = memory->getWordFromCurrentBank(sp, &afl);
+		mRes = memory->getWordFromStack(sp, &afl);
 		sp += 2;
 		fl = afl & 0xFF;
 		a = afl >> 8;
@@ -1526,7 +1526,7 @@ uint8_t i8080::execute() {
 		if (((fl & 0x80) >> 7) == 0)
 		{
 			sp -= 2;
-			mRes = memory->setWordToCurrentBank(sp, pc);
+			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
@@ -1537,7 +1537,7 @@ uint8_t i8080::execute() {
 		afl = a;
 		afl <<= 8;
 		afl |= fl;
-		mRes = memory->setWordToCurrentBank(sp, afl);
+		mRes = memory->setWordToStack(sp, afl);
 		NumTicks = 11;
 		break;
 	case 0xF6: // {ori}
@@ -1550,14 +1550,14 @@ uint8_t i8080::execute() {
 		break;
 	case 0xF7: // {rst 6}
 		sp -= 2;;
-		mRes = memory->setWordToCurrentBank(sp, pc);
+		mRes = memory->setWordToStack(sp, pc);
 		pc = 48;
 		NumTicks = 11;
 		break;
 	case 0xF8: // {rm}
 		if (((fl & 0x80) >> 7) == 1)
 		{
-			mRes = memory->getWordFromCurrentBank(sp, &pc);
+			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
 			NumTicks = 11;
 		}
@@ -1583,7 +1583,7 @@ uint8_t i8080::execute() {
 		if (((fl & 0x80) >> 7) == 1)
 		{
 			sp -= 2;
-			mRes = memory->setWordToCurrentBank(sp, pc);
+			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
@@ -1598,7 +1598,7 @@ uint8_t i8080::execute() {
 		break;
 	case 0xFF: // {rst 7}
 		sp -= 2;;
-		mRes = memory->setWordToCurrentBank(sp, pc);
+		mRes = memory->setWordToStack(sp, pc);
 		pc = 56;
 		NumTicks = 11;
 		break;

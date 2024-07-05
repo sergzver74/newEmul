@@ -22,6 +22,7 @@ public:
 	bool getByteFromCurrentBank(uint16_t addr, uint8_t* data);
 	bool getWord(uint16_t addr, uint16_t* data);
 	bool getWord(uint8_t bank, uint16_t addr, uint16_t* data);
+	bool getWordFromStack(uint16_t addr, uint16_t* data);
 	bool getWordFromCurrentBank(uint16_t addr, uint16_t* data);
 	bool setByte(uint16_t addr, uint8_t data);
 	bool setByte(uint8_t bank, uint16_t addr, uint8_t data);
@@ -31,6 +32,7 @@ public:
 	bool setWord(uint16_t addr, uint16_t data);
 	bool setWord(uint8_t bank, uint16_t addr, uint16_t data);
 	bool setWordToCurrentBank(uint16_t addr, uint16_t data);
+	bool setWordToStack(uint16_t addr, uint16_t data);
 	uint8_t* getVideoMemoryPointer();
 	uint8_t* getMemoryPointer(bool isRom, uint32_t *startAddr, uint32_t *endAddr);
 	void resetMainMemory();
