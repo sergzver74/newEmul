@@ -29,10 +29,10 @@ kvaz::~kvaz()
 void kvaz::setPortData(uint16_t portNum, uint16_t data) {
 	if (portNum == 0x10) {
 		port10 = data;
-		currentScreenPage = 4 - (data & 0x03);
-		if (currentScreenPage == 4) currentScreenPage = 0;
-		currentStackPage = 4 - ((data >> 2) & 0x03);
-		if (currentStackPage == 4) currentStackPage = 0;
+		currentScreenPage = 3 - (data & 0x03);
+		//if (currentScreenPage == 4) currentScreenPage = 0;
+		currentStackPage = 3 - ((data >> 2) & 0x03);
+		//if (currentStackPage == 4) currentStackPage = 0;
 		if ((data >> 4) & 0x01) quaziDiskStackMode = true; else quaziDiskStackMode = false;
 		if ((data >> 5) & 0x01) quaziDiskScreenModeAD = true; else quaziDiskScreenModeAD = false;
 	}
