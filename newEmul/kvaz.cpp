@@ -85,6 +85,14 @@ bool kvaz::getWordFromStack(uint16_t addr, uint16_t* data) {
 		*data |= mem[(currentStackPage << 16) + addr];
 		return true;
 	}
+	if (quaziDiskScreenModeAD) {
+		if (addr >= 0xA000 && addr <= 0xDFFF) {
+			*data = mem[(currentScreenPage << 16) + addr + 1];
+			*data <<= 8;
+			*data |= mem[(currentScreenPage << 16) + addr];
+			return true;
+		}
+	}
 	return false;
 }
 
@@ -117,6 +125,13 @@ bool kvaz::setWordToStack(uint16_t addr, uint16_t data) {
 		mem[(currentStackPage << 16) + addr] = (uint8_t)(data & 0xFF);
 		mem[(currentStackPage << 16) + addr + 1] = (uint8_t)(data >> 8);
 		return true;
+	}
+	if (quaziDiskScreenModeAD) {
+		if (addr >= 0xA000 && addr <= 0xDFFF) {
+			mem[(currentScreenPage << 16) + addr] = (uint8_t)(data & 0xFF);
+			mem[(currentScreenPage << 16) + addr + 1] = (uint8_t)(data >> 8);
+			return true;
+		}
 	}
 	return false;
 }

@@ -216,6 +216,24 @@ void K1818VG93::setPortData(uint16_t portNum, uint16_t data) {
 					curCount = sectorLength;
 					curWritePointer = (regSect - 1) * sectorLength + inSide * (fddSide * 5120) + curTrack * 10240;
 				}
+				if ((data & 0xFF) >> 5 == 6) {
+
+					printf("This is READ ADDRESS COMMAND\n");
+					exit(1);
+
+				}
+				if ((data & 0xFF) >> 4 == 14) {
+
+					printf("This is READ TRACK COMMMAND\n");
+					exit(1);
+
+				}
+				if ((data & 0xFF) >> 4 == 15) {
+
+					printf("This is WRIET TRACK COMMAND\n");
+					exit(1);
+
+				}
 
 				ready(false);
 			} else ready(true);
