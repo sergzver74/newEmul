@@ -50,6 +50,8 @@ private:
 	uint32_t curCount;
 	bool readMode;
 	bool writeMode;
+	bool readAddressMode;
+	uint8_t readAddressBuf[6];
 
 
 };

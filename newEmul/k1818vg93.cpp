@@ -21,6 +21,8 @@ K1818VG93::K1818VG93(string fn) {
 		if (loadImage(fn)) FDDPresent = true; else FDDPresent = false;
 	}
 	else FDDPresent = false;
+	readAddressMode = false;
+	for (int i = 0; i < 6; i++) readAddressBuf[i] = 0;
 	fddNum = 0;
 }
 
@@ -43,6 +45,8 @@ K1818VG93::~K1818VG93() {
 	stepDirection = false;
 	readMode = false;
 	writeMode = false;
+	readAddressMode = false;
+	for (int i = 0; i < 6; i++) readAddressBuf[i] = 0;
 	fddNum = 0;
 }
 
@@ -170,8 +174,8 @@ void K1818VG93::setPortData(uint16_t portNum, uint16_t data) {
 				}
 				if ((data & 0xFF) >> 5 == 1) {
 					if (!stepDirection) {
-						if (curTrack < 79) {
-							curTrack++;
+						curTrack++;
+						if (curTrack < 80) {
 							search(false);
 						} else search(true);
 					}
@@ -182,16 +186,16 @@ void K1818VG93::setPortData(uint16_t portNum, uint16_t data) {
 						}
 						else search(true);
 					}
-					if ((data & 0xFF) >> 4 == 1) regTrack = curTrack;
+					if ((((data & 0xFF) >> 4) & 0x01) == 1) regTrack = curTrack;
 				}
 				if ((data & 0xFF) >> 5 == 2) {
 					stepDirection = false;
-					if (curTrack < 79) {
-						curTrack++;
+					curTrack++;
+					if (curTrack < 80) {
 						search(false);
 					}
 					else search(true);
-					if ((data & 0xFF) >> 4 == 1) regTrack = curTrack;
+					if ((((data & 0xFF) >> 4) & 0x01) == 1) regTrack = curTrack;
 				}
 				if ((data & 0xFF) >> 5 == 3) {
 					stepDirection = true;
@@ -200,7 +204,7 @@ void K1818VG93::setPortData(uint16_t portNum, uint16_t data) {
 						search(false);
 					}
 					else search(true);
-					if ((data & 0xFF) >> 4 == 1) regTrack = curTrack;
+					if ((((data & 0xFF) >> 4) & 0x01) == 1) regTrack = curTrack;
 				}
 				if ((data & 0xFF) >> 5 == 4) {
 					readMode = true;
@@ -218,9 +222,17 @@ void K1818VG93::setPortData(uint16_t portNum, uint16_t data) {
 				}
 				if ((data & 0xFF) >> 5 == 6) {
 
-					printf("This is READ ADDRESS COMMAND\n");
-					exit(1);
-
+					readAddressMode = true;
+					impulse(true);
+					busy(true);
+					curCount = 6;
+					curReadPointer = 0;
+					readAddressBuf[0] = fddSide;
+					readAddressBuf[1] = curTrack;
+					readAddressBuf[2] = regSect;
+					readAddressBuf[3] = sectorLength;
+					readAddressBuf[4] = 0;
+					readAddressBuf[5] = 0;
 				}
 				if ((data & 0xFF) >> 4 == 14) {
 
@@ -263,6 +275,15 @@ uint16_t K1818VG93::getPortData(uint16_t portNum) {
 				readMode = false;
 			}
 			return image[curReadPointer++];
+		}
+		if (readAddressMode) {
+			curCount--;
+			if (curCount == 0)
+			{
+				regStatus = 0;
+				readAddressMode = false;
+			}
+			return readAddressBuf[curReadPointer++];
 		}
 		break;
 	case 0x19:
