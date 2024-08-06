@@ -162,6 +162,7 @@
     <ClCompile Include="openDialog.cpp" />
     <ClCompile Include="resampler.cpp" />
     <ClCompile Include="sound.cpp" />
+    <ClCompile Include="tapeplayer.cpp" />
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="vecrordisplay.cpp" />
     <ClCompile Include="vector06c.cpp" />
@@ -194,6 +195,7 @@
     <ClInclude Include="ports.h" />
     <ClInclude Include="resampler.h" />
     <ClInclude Include="sound.h" />
+    <ClInclude Include="tapeplayer.h" />
     <ClInclude Include="timer.h" />
     <ClInclude Include="vecrordisplay.h" />
     <ClInclude Include="vector06c.h" />

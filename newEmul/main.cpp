@@ -17,6 +17,7 @@
 #include "vkeyb.h"
 #include "config.h"
 #include "breakpoints.h"
+#include "tapeplayer.h"
 
 //long long clockCount = 0;
 
@@ -36,6 +37,7 @@ SDL_Renderer* subRenderer;
 Debug* dbgWindow = NULL;
 OpenDialog* openDlg = NULL;
 VKEYBOARD* virtualKeyboard = NULL;
+TapePlayer* tapePlayer = NULL;
 Window *wins[MAXWINDOWS];
 Machine *globalMachine;
 Uint32 myEventType = 0;
@@ -109,6 +111,14 @@ void options() {
 	printf("Selected options\n");
 }
 
+void tapePlayerDo() {
+	printf("Selected tape player\n");
+	uint32_t openWindowWidth = 620;
+	uint32_t openWindowHeight = 500;
+	tapePlayer = new TapePlayer("Tape player", 200, 200, openWindowWidth, openWindowHeight, myEventType);
+	wins[4] = tapePlayer;
+}
+
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 640;
 
@@ -160,9 +170,11 @@ int main(int argc, char* args[]) {
 	mainMenu->addSubMenuItem(0, "Exit", exitRun);
 	mainMenu->addMainMenuItem("Debug");
 	mainMenu->addSubMenuItem(1, "Debugger", debugger);
-	mainMenu->addSubMenuItem(1, "Keyboard", vkeyboard);
 	mainMenu->addMainMenuItem("Settings");
 	mainMenu->addSubMenuItem(2, "Options", options);
+	mainMenu->addMainMenuItem("Tools");
+	mainMenu->addSubMenuItem(3, "Keyboard", vkeyboard);
+	mainMenu->addSubMenuItem(3, "Tape player", tapePlayerDo);
 	mainMenu->Visibled(true);
 	
 	updateMainWindow(renderer, surf);
