@@ -1,13 +1,21 @@
 #include "tapeplayer.h"
 
+#include "resource.cpp"
+
 TapePlayer::TapePlayer(std::string name, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ev) : Window(name, x, y, w, h, ev) {
 
+	playbmp = new tBitmap;
+	playbmp->loadBitmapFromMemory(playImage);
+	unsigned int* bmpdata = playbmp->getBMPImage();
+	gContext->putImage(100, 100, bmpdata);
 
 	updateWindow();
+	free(bmpdata);
+
 }
 
 TapePlayer::~TapePlayer() {
-
+	delete playbmp;
 }
 
 bool TapePlayer::eventManager(SDL_Event event) {

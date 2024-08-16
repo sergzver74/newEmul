@@ -143,6 +143,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bmp.cpp" />
     <ClCompile Include="breakpoints.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="debug.cpp" />
@@ -172,6 +173,7 @@
     <ClCompile Include="z80.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bmp.h" />
     <ClInclude Include="breakpoints.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="cpu.h" />
