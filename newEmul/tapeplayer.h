@@ -12,6 +12,23 @@
 class TapePlayer : public Window {
 private:
 	tBitmap* playbmp;
+	unsigned int* playImageData;
+	tButton* play;
+	tBitmap* rewbmp;
+	unsigned int* rewImageData;
+	tButton* rew;
+	tBitmap* nextbmp;
+	unsigned int* nextImageData;
+	tButton* next;
+	tBitmap* stopbmp;
+	unsigned int* stopImageData;
+	tButton* stop;
+	tBitmap* openbmp;
+	unsigned int* openImageData;
+	tButton* open;
+	tBitmap* recbmp;
+	unsigned int* recImageData;
+	tButton* rec;
 public:
 	TapePlayer(std::string name, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ev);
 	virtual ~TapePlayer();

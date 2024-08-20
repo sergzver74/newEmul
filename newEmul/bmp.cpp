@@ -291,7 +291,7 @@ void tBitmap::loadBitmap(char *name)
             if ((head.Width*3)%4==0) strlen = head.Width*3; else strlen = head.Width*3 + (4-(head.Width*3)%4);
             for (y=0;y<head.Height;y++)
             {
-                res = fread(buf,3,head.Width,bmpFile);
+                res = fread(buf,1, strlen,bmpFile);
                 n = 0;
                 for(x=0;x<head.Width;x++)
                 {
@@ -502,7 +502,7 @@ void tBitmap::loadBitmapFromMemory(unsigned char* bmpData)
         if ((head.Width * 3) % 4 == 0) strlen = head.Width * 3; else strlen = head.Width * 3 + (4 - (head.Width * 3) % 4);
         for (y = 0; y < head.Height; y++)
         {
-            res = mread(buf, 3, head.Width, bmpData);
+            res = mread(buf, 1, strlen, bmpData);
             n = 0;
             for (x = 0; x < head.Width; x++)
             {

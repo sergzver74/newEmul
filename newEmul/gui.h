@@ -112,11 +112,16 @@ private:
     int by1;                    ///< координата Y окончания области вывода
     int dx;
     int dy;
+    int imageX;
+    int imageY;
     std::string txt;
     uint8_t btp;
     bool visible;
     bool enable;
     unsigned int* lbl;
+    unsigned int* image;
+    unsigned int imageColorKey;
+    bool imagePresent;
     tLabel* caption;
 
     Graph* grContext;
@@ -127,6 +132,7 @@ public:
     ~tButton() {};
     tButton(Graph* gc, Font* fc);
     void create(int x, int y, int dx, int dy, std::string text);
+    void setImage(int x, int y, unsigned int* im, unsigned int ick);
     void setSpecialButtonType(uint8_t tp);
     void changePosition(int x, int y);
     void getPositionAndSize(int* x, int* y, int* x1, int* y1);

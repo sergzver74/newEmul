@@ -247,6 +247,23 @@ void tButton::create(int x, int y, int dx, int dy, std::string text) {
     enable = true;
     lbl = NULL;
     caption = NULL;
+    image = NULL;
+    imagePresent = false;
+    imageX = 0;
+    imageY = 0;
+    imageColorKey = 0;
+}
+
+void tButton::setImage(int x, int y, unsigned int* im, unsigned int ick)
+{
+    if (im != NULL)
+    {
+        imagePresent = true;
+        image = im;
+        imageX = bx + x;
+        imageY = by + y;
+        imageColorKey = ick;
+    }
 }
 
 void tButton::setSpecialButtonType(uint8_t tp) {
@@ -293,6 +310,11 @@ void tButton::Visibled(bool vis) {
             grContext->SetColor(cWINGRAY);
             grContext->line(bx+1, by1-1, bx1-1, by1-1);
             grContext->line(bx1 - 1, by + 1, bx1 - 1, by1 - 1);
+            if (imagePresent) {
+                grContext->setPutImageStyle(1, imageColorKey);
+                grContext->putImage(imageX, imageY, image);
+                grContext->setPutImageStyle(0, 0x00000000);
+            }
             if (!btp) {
                 caption = new tLabel(grContext, fontContext);
                 caption->create(bx, by, dx, dy, cBLACK, txt);
@@ -371,6 +393,11 @@ void tButton::OnClick(uint32_t param1, uint32_t param2) {
         grContext->rectangle(bx, by, bx1, by1);
         grContext->SetColor(cWINGRAY);
         grContext->rectangle(bx + 1, by + 1, bx1 - 1, by1 - 1);
+        if (imagePresent) {
+            grContext->setPutImageStyle(1, imageColorKey);
+            grContext->putImage(imageX+2, imageY+2, image);
+            grContext->setPutImageStyle(0, 0x00000000);
+        }
         if (!btp) {
             caption = new tLabel(grContext, fontContext);
             caption->create(bx + 2, by + 2, dx, dy, cBLACK, txt);
@@ -426,6 +453,11 @@ void tButton::OnClickUp(uint32_t param1, uint32_t param2) {
         grContext->SetColor(cWINGRAY);
         grContext->line(bx + 1, by1 - 1, bx1 - 1, by1 - 1);
         grContext->line(bx1 - 1, by + 1, bx1 - 1, by1 - 1);
+        if (imagePresent) {
+            grContext->setPutImageStyle(1, imageColorKey);
+            grContext->putImage(imageX, imageY, image);
+            grContext->setPutImageStyle(0, 0x00000000);
+        }
         if (!btp) {
             caption = new tLabel(grContext, fontContext);
             caption->create(bx, by, dx, dy, cBLACK, txt);
@@ -484,6 +516,11 @@ void tButton::Destroy()
     by1 = 0;
     txt = "";
     btp = 0;
+    image = NULL;
+    imagePresent = false;
+    imageX = 0;
+    imageY = 0;
+    imageColorKey = 0;
 }
 
 tCursor::tCursor(Graph* gc, Font* fc, uint32_t winId, uint32_t evType) {
