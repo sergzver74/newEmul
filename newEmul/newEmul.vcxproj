@@ -149,6 +149,7 @@
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="doevents.cpp" />
     <ClCompile Include="fonts.cpp" />
+    <ClCompile Include="fs.cpp" />
     <ClCompile Include="graph.cpp" />
     <ClCompile Include="gui.cpp" />
     <ClCompile Include="hex.cpp" />
@@ -181,6 +182,7 @@
     <ClInclude Include="doevents.h" />
     <ClInclude Include="emutypes.h" />
     <ClInclude Include="fonts.h" />
+    <ClInclude Include="fs.h" />
     <ClInclude Include="graph.h" />
     <ClInclude Include="gui.h" />
     <ClInclude Include="hex.h" />

@@ -17,9 +17,6 @@ public:
 
 private:
 
-	string* getDisks();
-	string GetThisPath();
-
 	tLabel* folderText;
 	tLabel* nameText;
 	tEdit* fileName;
