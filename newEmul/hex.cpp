@@ -41,6 +41,16 @@ std::string decToHexDWord(uint32_t b) {
 	return res;
 }
 
+uint16_t OctToDec(std::string oct) {
+	uint16_t res = 0;
+	for (int i = 0; i < oct.length(); i++) {
+		uint16_t code = 0;
+		if (oct[i] >= '0' && oct[i] <= '7') code = oct[i] - 0x30;
+		res = res * 8 + code;
+	}
+	return res;
+}
+
 std::string getRow(std::string s, int n) {
 	std::string res = "";
 

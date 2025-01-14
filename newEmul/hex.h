@@ -8,6 +8,7 @@ std::string decToHexByte(uint8_t b);
 std::string decToHexWord(uint16_t b);
 std::string decToHex5(uint32_t b);
 std::string decToHexDWord(uint32_t b);
+uint16_t OctToDec(std::string oct);
 std::string getRow(std::string s, int n);
 
 #endif // !__HEX_H__
