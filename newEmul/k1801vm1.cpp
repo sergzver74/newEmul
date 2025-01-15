@@ -122,10 +122,10 @@ uint8_t k1801vm1::execute() {
 	//if (HLT && !INTE) return 4;
 	//if (HLT) return 4;
 
-	uint8_t code;
+	uint16_t code;
 	bool mRes = false;
 	//if (!INTREQ) {
-		mRes = memory->getByte(PC, &code);
+		mRes = memory->getWord(PC, &code);
 		if (mRes) {
 			return NumTicks;
 		}
@@ -140,7 +140,7 @@ uint8_t k1801vm1::execute() {
 
 	switch (code)
 	{
-	case 0x00:
+	case 0x0000:
 		break;
 	}
 
@@ -157,10 +157,10 @@ bool k1801vm1::isHalted() {
 string k1801vm1::dasm(uint16_t* addr)
 {
 	string s = "";
-	uint8_t code, b1;
+	uint16_t code;
 	uint16_t w1;
 
-	bool mRes = memory->getByte(*addr, &code);
+	bool mRes = memory->getWord(*addr, &code);
 	if (mRes) {
 		return s;
 	}
@@ -168,7 +168,7 @@ string k1801vm1::dasm(uint16_t* addr)
 
 	switch (code)
 	{
-	case 0x00:
+	case 0x0000:
 		break;
 	}
 	return s;
@@ -230,4 +230,22 @@ void k1801vm1::SetDebugValue(uint16_t tp, uint16_t num, std::string data) {
 			break;
 		}
 	}
+}
+
+void k1801vm1::SetAssemblerValue(std::string addr, std::string value) {
+
+}
+
+void k1801vm1::setPort(uint16_t num, Ports* dev) {
+
+}
+
+uint8_t k1801vm1::getPort(uint8_t num) {
+
+	return 0;
+}
+
+uint16_t k1801vm1::getPort(uint16_t num) {
+
+	return 0;
 }
