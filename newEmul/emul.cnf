@@ -6,6 +6,6 @@ name=Вектор-06ц
 rom=d:\emuldata\boots.bin
 ramdisk=yes
 fddcontroller=yes
-fdd=d:\emuldata\sd.fdd
+fdd=d:\emuldata\2V02-T0-82.fdd
 hddcontroller=no
 hdd=d:\emuldata\vector.hdd

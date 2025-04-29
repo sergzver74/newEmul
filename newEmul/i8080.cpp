@@ -565,6 +565,7 @@ uint8_t i8080::execute() {
 		NumTicks = 5;
 		break;
 	case 0x41: // {mov b,c}
+		bc.r8.hi = bc.r8.lo;
 		NumTicks = 5;
 		break;
 	case 0x42: // {mov b,d}
