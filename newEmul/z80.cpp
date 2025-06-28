@@ -12,6 +12,7 @@ using namespace std;
 #define E blockRegs[currentBlock].de.r8.lo
 #define H blockRegs[currentBlock].hl.r8.hi
 #define L blockRegs[currentBlock].hl.r8.lo
+#define AF af[currentAF].r16
 #define BC blockRegs[currentBlock].bc.r16
 #define DE blockRegs[currentBlock].de.r16
 #define HL blockRegs[currentBlock].hl.r16
@@ -25,9 +26,18 @@ using namespace std;
 #define fZ 6
 #define fS 7
 
+#define Cf	1
+#define Nf	2
+#define PVf	4
+#define F3f	8
+#define Hf	16
+#define F5f	32
+#define Zf	64
+#define Sf	128
+
 #define SET(n) (F | (1 << n))
 #define CLEAR(n) (F & (!(1 << n)))
-
+#define FLAG(n) ((F & (1 << n)) >> n)
 
 
 z80::z80(Memory* mem) {
@@ -76,85 +86,85 @@ Registers z80::getRegisters() {
 	reg.count = 0;
 	reg.registers[reg.count].name = "A";
 	reg.registers[reg.count].data = (uint32_t)af[0].r8.hi;
-	reg.registers[reg.count++].strData = hex(af[0].r8.hi);
+	reg.registers[reg.count++].strData = decToHexByte(af[0].r8.hi);
 	reg.registers[reg.count].name = "A`";
 	reg.registers[reg.count].data = (uint32_t)af[1].r8.hi;
-	reg.registers[reg.count++].strData = hex(af[1].r8.hi);
+	reg.registers[reg.count++].strData = decToHexByte(af[1].r8.hi);
 	reg.registers[reg.count].name = "B";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[0].bc.r8.hi;
-	reg.registers[reg.count++].strData = hex(blockRegs[0].bc.r8.hi);
+	reg.registers[reg.count++].strData = decToHexByte(blockRegs[0].bc.r8.hi);
 	reg.registers[reg.count].name = "B`";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[1].bc.r8.hi;
-	reg.registers[reg.count++].strData = hex(blockRegs[1].bc.r8.hi);
+	reg.registers[reg.count++].strData = decToHexByte(blockRegs[1].bc.r8.hi);
 	reg.registers[reg.count].name = "C";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[0].bc.r8.lo;
-	reg.registers[reg.count++].strData = hex(blockRegs[0].bc.r8.lo);
+	reg.registers[reg.count++].strData = decToHexByte(blockRegs[0].bc.r8.lo);
 	reg.registers[reg.count].name = "C`";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[1].bc.r8.lo;
-	reg.registers[reg.count++].strData = hex(blockRegs[1].bc.r8.lo);
+	reg.registers[reg.count++].strData = decToHexByte(blockRegs[1].bc.r8.lo);
 	reg.registers[reg.count].name = "D";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[0].de.r8.hi;
-	reg.registers[reg.count++].strData = hex(blockRegs[0].de.r8.hi);
+	reg.registers[reg.count++].strData = decToHexByte(blockRegs[0].de.r8.hi);
 	reg.registers[reg.count].name = "D`";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[1].de.r8.hi;
-	reg.registers[reg.count++].strData = hex(blockRegs[1].de.r8.hi);
+	reg.registers[reg.count++].strData = decToHexByte(blockRegs[1].de.r8.hi);
 	reg.registers[reg.count].name = "E";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[0].de.r8.lo;
-	reg.registers[reg.count++].strData = hex(blockRegs[0].de.r8.lo);
+	reg.registers[reg.count++].strData = decToHexByte(blockRegs[0].de.r8.lo);
 	reg.registers[reg.count].name = "E`";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[1].de.r8.lo;
-	reg.registers[reg.count++].strData = hex(blockRegs[1].de.r8.lo);
+	reg.registers[reg.count++].strData = decToHexByte(blockRegs[1].de.r8.lo);
 	reg.registers[reg.count].name = "H";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[0].hl.r8.hi;
-	reg.registers[reg.count++].strData = hex(blockRegs[0].hl.r8.hi);
+	reg.registers[reg.count++].strData = decToHexByte(blockRegs[0].hl.r8.hi);
 	reg.registers[reg.count].name = "H`";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[1].hl.r8.hi;
-	reg.registers[reg.count++].strData = hex(blockRegs[1].hl.r8.hi);
+	reg.registers[reg.count++].strData = decToHexByte(blockRegs[1].hl.r8.hi);
 	reg.registers[reg.count].name = "L";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[0].hl.r8.lo;
-	reg.registers[reg.count++].strData = hex(blockRegs[0].hl.r8.lo);
+	reg.registers[reg.count++].strData = decToHexByte(blockRegs[0].hl.r8.lo);
 	reg.registers[reg.count].name = "L`";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[1].hl.r8.lo;
-	reg.registers[reg.count++].strData = hex(blockRegs[1].hl.r8.lo);
+	reg.registers[reg.count++].strData = decToHexByte(blockRegs[1].hl.r8.lo);
 	reg.registers[reg.count].name = "BC";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[0].bc.r16;
-	reg.registers[reg.count++].strData = hexaddr(blockRegs[0].bc.r16);
+	reg.registers[reg.count++].strData = decToHexWord(blockRegs[0].bc.r16);
 	reg.registers[reg.count].name = "BC`";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[1].bc.r16;
-	reg.registers[reg.count++].strData = hexaddr(blockRegs[1].bc.r16);
+	reg.registers[reg.count++].strData = decToHexWord(blockRegs[1].bc.r16);
 	reg.registers[reg.count].name = "DE";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[0].de.r16;
-	reg.registers[reg.count++].strData = hexaddr(blockRegs[0].de.r16);
+	reg.registers[reg.count++].strData = decToHexWord(blockRegs[0].de.r16);
 	reg.registers[reg.count].name = "DE`";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[1].de.r16;
-	reg.registers[reg.count++].strData = hexaddr(blockRegs[1].de.r16);
+	reg.registers[reg.count++].strData = decToHexWord(blockRegs[1].de.r16);
 	reg.registers[reg.count].name = "HL";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[0].hl.r16;
-	reg.registers[reg.count++].strData = hexaddr(blockRegs[0].hl.r16);
+	reg.registers[reg.count++].strData = decToHexWord(blockRegs[0].hl.r16);
 	reg.registers[reg.count].name = "HL`";
 	reg.registers[reg.count].data = (uint32_t)blockRegs[1].hl.r16;
-	reg.registers[reg.count++].strData = hexaddr(blockRegs[1].hl.r16);
+	reg.registers[reg.count++].strData = decToHexWord(blockRegs[1].hl.r16);
 	reg.registers[reg.count].name = "IR";
 	reg.registers[reg.count].data = (uint32_t)ir.r16;
-	reg.registers[reg.count++].strData = hexaddr(ir.r16);
+	reg.registers[reg.count++].strData = decToHexWord(ir.r16);
 	reg.registers[reg.count].name = "IX";
 	reg.registers[reg.count].data = (uint32_t)ix;
-	reg.registers[reg.count++].strData = hexaddr(ix);
+	reg.registers[reg.count++].strData = decToHexWord(ix);
 	reg.registers[reg.count].name = "IY";
 	reg.registers[reg.count].data = (uint32_t)iy;
-	reg.registers[reg.count++].strData = hexaddr(iy);
+	reg.registers[reg.count++].strData = decToHexWord(iy);
 	reg.registers[reg.count].name = "SP";
 	reg.registers[reg.count].data = (uint32_t)sp;
-	reg.registers[reg.count++].strData = hexaddr(sp);
+	reg.registers[reg.count++].strData = decToHexWord(sp);
 	reg.registers[reg.count].name = "PC";
 	reg.registers[reg.count].data = (uint32_t)pc;
-	reg.registers[reg.count++].strData = hexaddr(pc);
+	reg.registers[reg.count++].strData = decToHexWord(pc);
 	reg.registers[reg.count].name = "FLAGS";
 	reg.registers[reg.count].data = (uint32_t)af[0].r8.lo;
-	reg.registers[reg.count++].strData = hex(af[0].r8.lo);
+	reg.registers[reg.count++].strData = decToHexByte(af[0].r8.lo);
 	reg.registers[reg.count].name = "FLAGS`";
 	reg.registers[reg.count].data = (uint32_t)af[1].r8.lo;
-	reg.registers[reg.count++].strData = hex(af[1].r8.lo);
+	reg.registers[reg.count++].strData = decToHexByte(af[1].r8.lo);
 	reg.flags.count = 0;
 	reg.flags.flags[reg.flags.count].name = "S";
 	reg.flags.flags[reg.flags.count].data = af[0].r8.lo & 0x80;
@@ -221,9 +231,11 @@ void z80::reset() {
 }
 
 
-void z80::setfl()
+void z80::setfl(bool h)
 {
 	uint8_t k, b;
+	
+	F = A & (F3f | F5f);
 
 	b = A;
 	k = 0;
@@ -236,6 +248,9 @@ void z80::setfl()
 	if (A == 0) SET(fZ); else CLEAR(fZ);
 	if (A > 127) SET(fS); else CLEAR(fS);
 	if ((k & 0x01) == 0) SET(fPV); else CLEAR(fPV);
+	if (h) SET(fH); else CLEAR(fH);
+	CLEAR(fC);
+	CLEAR(fN);
 }
 
 
@@ -243,6 +258,8 @@ void z80::summ(uint8_t sl, uint8_t ppp, uint8_t typ)
 {
 	uint16_t temp = 0;
 	uint8_t iAC = 0;
+	F = A & (F3f | F5f);
+
 	if (typ)
 	{
 		temp = A - sl - ppp;
@@ -287,12 +304,33 @@ uint8_t z80::inrdcr(uint8_t sl, uint8_t typ)
 	return sl;
 }
 
+uint16_t z80::add16(uint16_t a, uint16_t b) {
+	uint32_t tmp = a + b;
+	F = uint8_t(F & (Sf | Zf | PVf) | ((tmp >> 8) & (F3f | F5f)) | (((a ^ b ^ tmp) >> 8) & Hf) | ((tmp >> 16) & 1));
+	return (uint16_t)tmp;
+}
+
 uint8_t z80::execute(uint16_t addr) {
 	uint16_t  tmpPC = pc;
 	pc = addr;
 	uint8_t res = execute();
 	pc = tmpPC;
 	return res;
+}
+
+uint8_t z80::bitOps() {
+	return 0;
+}
+uint8_t z80::miscOps() {
+	return 0;
+}
+
+uint8_t z80::ixOps() {
+	return 0;
+}
+
+uint8_t z80::iyOps() {
+	return 0;
 }
 
 uint8_t z80::execute() {
@@ -338,11 +376,11 @@ uint8_t z80::execute() {
 		NumTicks = 6;
 		break;
 	case 0x04: //{inc b}
-		BC = inrdcr(BC, 0);
+		B = inrdcr(B, 0);
 		NumTicks = 4;
 		break;
 	case 0x05: //{dec b}
-		BC = inrdcr(BC, 1);
+		B = inrdcr(B, 1);
 		NumTicks = 4;
 		break;
 	case 0x06: //{ld b, d8}
@@ -358,6 +396,8 @@ uint8_t z80::execute() {
 			SET(fC);
 		}
 		else CLEAR(fC);
+		CLEAR(fN);
+		CLEAR(fH);
 		NumTicks = 4;
 		break;
 	case 0x08: // ex af, af`
@@ -365,871 +405,866 @@ uint8_t z80::execute() {
 		NumTicks = 4;
 		break;
 	case 0x09: //{add hl,bc}
-		if ((0xFFFF - blockRegs[currentBlock].hl.r16) < blockRegs[currentBlock].bc.r16) af[currentAF].r8.lo |= 0x01; else af[currentAF].r8.lo &= 0xFE;
-		blockRegs[currentBlock].hl.r16 += blockRegs[currentBlock].bc.r16;
-		af[currentAF].r8.lo &= 0xFD;
+		HL = add16(HL, BC);
 		NumTicks = 11;
-		q
 		break;
-	case 0x0A: // {ldax b}
-		mRes = memory->getByte(bc.r16, &a);
+	case 0x0A: // {ld a, (bc)}
+		mRes = memory->getByte(BC, &A);
 		NumTicks = 7;
 		break;
-	case 0x0B: // {dcx b}
-		bc.r16--;
-		NumTicks = 5;
+	case 0x0B: // {dec bc}
+		BC--;
+		NumTicks = 6;
 		break;
-	case 0x0C: // {inr c}
-		bc.r8.lo = inrdcr(bc.r8.lo, 0);
-		NumTicks = 5;
+	case 0x0C: // {inc c}
+		C = inrdcr(C, 0);
+		NumTicks = 4;
 		break;
-	case 0x0D: //{dcr c}
-		bc.r8.lo = inrdcr(bc.r8.lo, 1);
-		NumTicks = 5;
+	case 0x0D: //{dec c}
+		C = inrdcr(C, 1);
+		NumTicks = 4;
 		break;
-	case 0x0E: // {mvi c, d8}
-		mRes = memory->getByte(pc++, &bc.r8.lo);
+	case 0x0E: // {ld c, d8}
+		mRes = memory->getByte(pc++, &C);
 		NumTicks = 7;
 		break;
 	case 0x0F: // {rrc}
-		olda = a & 0x01;
-		a = a >> 1;
+		olda = A & 0x01;
+		A = A >> 1;
 		if (olda == 0x01)
 		{
-			a |= 0x80;
-			fl |= 0x01;
+			A |= 0x80;
+			SET(fC);
 		}
-		else fl &= 0xFE;
+		else CLEAR(fC);
+		CLEAR(fN);
+		CLEAR(fH);
 		NumTicks = 4;
 		break;
-	case 0x11: // {lxi d,d16}
-		mRes = memory->getWord(pc, &de.r16);
+	case 0x10: // djnz d8
+		mRes = memory->getByte(pc, &b1);
+		B--;
+		if (B == 0) {
+			pc++;
+			NumTicks = 8;
+		}
+		else {
+			pc--;
+			pc += (int8_t)b1;
+			NumTicks = 13;
+		}
+		break;
+	case 0x11: // {ld de,d16}
+		mRes = memory->getWord(pc, &DE);
 		pc += 2;
 		NumTicks = 10;
 		break;
-	case 0x12: // {stax d}
-		mRes = memory->setByte(de.r16, a);
+	case 0x12: // {ld (de),a}
+		mRes = memory->setByte(DE, A);
 		NumTicks = 7;
 		break;
-	case 0x13: // {inx d}
-		de.r16++;
-		NumTicks = 5;
+	case 0x13: // {inc de}
+		DE++;
+		NumTicks = 6;
 		break;
-	case 0x14: // {inr d}
-		de.r8.hi = inrdcr(de.r8.hi, 0);
-		NumTicks = 5;
-		break;
-	case 0x15: // {dcr d}
-		de.r8.hi = inrdcr(de.r8.hi, 1);
-		NumTicks = 5;
-		break;
-	case 0x16: // {mvi d}
-		mRes = memory->getByte(pc++, &de.r8.hi);
-		NumTicks = 7;
-		break;
-	case 0x17: // {ral}
-		olda = a & 0x80;
-		dopcode = fl & 0x01;
-		a = (a << 1) | dopcode;
-		if (olda == 0x80) fl |= 0x01; else fl &= 0xFE;
+	case 0x14: // {inc d}
+		D = inrdcr(D, 0);
 		NumTicks = 4;
 		break;
-	case 0x19: // {dad d}
-		if ((0xFFFF - hl.r16) < de.r16) fl |= 0x01; else fl &= 0xFE;
-		hl.r16 += de.r16;
-		NumTicks = 10;
+	case 0x15: // {dec d}
+		D = inrdcr(D, 1);
+		NumTicks = 4;
 		break;
-	case 0x1A: // {ldax d}
-		mRes = memory->getByte(de.r16, &a);
+	case 0x16: // {ld d, d8}
+		mRes = memory->getByte(pc++, &D);
 		NumTicks = 7;
 		break;
-	case 0x1B: // {dcx d}
-		de.r16--;
-		NumTicks = 5;
+	case 0x17: // {rla}
+		olda = A & 0x80;
+		dopcode = F & 0x01;
+		A = (A << 1) | dopcode;
+		if (olda == 0x80) SET(fC); else CLEAR(fC);
+		CLEAR(fN);
+		CLEAR(fH);
+		NumTicks = 4;
 		break;
-	case 0x1C: // {inr e}
-		de.r8.lo = inrdcr(de.r8.lo, 0);
-		NumTicks = 5;
+	case 0x18: // jr d8
+		mRes = memory->getByte(pc, &b1);
+		pc--;
+		pc += (int8_t)b1;
+		NumTicks = 12;
 		break;
-	case 0x1D: // {dcr e}
-		de.r8.lo = inrdcr(de.r8.lo, 1);
-		NumTicks = 5;
+	case 0x19: // {add hl, de}
+		HL = add16(HL, DE);
+		NumTicks = 11;
 		break;
-	case 0x1E: // {mvi e}
-		mRes = memory->getByte(pc++, &de.r8.lo);
+	case 0x1A: // {ld a, (de)}
+		mRes = memory->getByte(DE, &A);
 		NumTicks = 7;
 		break;
-	case 0x1F: // {rar}
-		olda = a & 0x01;
-		dopcode = fl & 0x01;
+	case 0x1B: // {dec de}
+		DE--;
+		NumTicks = 6;
+		break;
+	case 0x1C: // {inc e}
+		E = inrdcr(E, 0);
+		NumTicks = 4;
+		break;
+	case 0x1D: // {dec e}
+		E = inrdcr(E, 1);
+		NumTicks = 4;
+		break;
+	case 0x1E: // {ld e, d8}
+		mRes = memory->getByte(pc++, &E);
+		NumTicks = 7;
+		break;
+	case 0x1F: // {rra}
+		olda = A & 0x01;
+		dopcode = F & 0x01;
 		dopcode <<= 7;
-		a = dopcode | (a >> 1);
-		if (olda == 0x01) fl |= 0x01; else fl &= 0xFE;
+		A = dopcode | (A >> 1);
+		if (olda == 0x01) SET(fC); else CLEAR(fC);
+		CLEAR(fN);
+		CLEAR(fH);
 		NumTicks = 4;
 		break;
-	case 0x21: // {lxi h,d16}
-		mRes = memory->getWord(pc, &hl.r16);
+	case 0x20: // jr nz, d8
+		mRes = memory->getByte(pc, &b1);
+		pc--;
+		if (F & Zf == 0) {
+			pc += (int8_t)b1;
+			NumTicks = 12;
+		}
+		else {
+			pc += 2;
+			NumTicks = 7;
+		}
+		break;
+	case 0x21: // {ld hl, d16}
+		mRes = memory->getWord(pc, &HL);
 		pc += 2;
 		NumTicks = 10;
 		break;
-	case 0x22: // {shld addr}
+	case 0x22: // {ld (d16), hl}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		mRes = memory->setWord(addr, hl.r16);
+		mRes = memory->setWord(addr, HL);
 		NumTicks = 16;
 		break;
-	case 0x23: // {inx h}
-		hl.r16++;
-		NumTicks = 5;
+	case 0x23: // {inc hl}
+		HL++;
+		NumTicks = 6;
 		break;
-	case 0x24: // {inr h}
-		hl.r8.hi = inrdcr(hl.r8.hi, 0);
-		NumTicks = 5;
+	case 0x24: // {inc h}
+		H = inrdcr(H, 0);
+		NumTicks = 4;
 		break;
-	case 0x25: /// {dcr h}
-		hl.r8.hi = inrdcr(hl.r8.hi, 1);
-		NumTicks = 5;
+	case 0x25: /// {dec h}
+		H = inrdcr(H, 1);
+		NumTicks = 4;
 		break;
-	case 0x26: // {mvi h}
-		mRes = memory->getByte(pc++, &hl.r8.hi);
+	case 0x26: // {ld h, d8}
+		mRes = memory->getByte(pc++, &H);
 		NumTicks = 7;
 		break;
 	case 0x27: // {daa}
-	{
-		uint8_t temp = 0;
-		uint8_t tmpC = (fl & 0x01);
-		if (((a & 0x0F) > 9) || ((fl & 0x10) == 0x10))
 		{
-			temp = 0x06;
+			uint16_t tempAF = AF;
+			AF = daaAFTable[(tempAF >> 8) | ((tempAF & (Cf | Nf)) << 8) | ((tempAF & Hf) << 6)];
+			NumTicks = 4;
 		}
-		if (((a >> 4) > 9) || ((fl & 0x01) == 0x01) || (((a >> 4) >= 9) && ((a & 0x0F) > 9)))
-		{
-			temp |= 0x60;
-			tmpC = 1;
-		}
-		summ(temp, 0, 0);
-		if (tmpC) fl |= 0x01; else fl &= 0xFE;
-		if (pTable[a] == 1) fl |= 0x04; else fl &= 0xFB;
-		NumTicks = 4;
-	}
-	break;
-	case 0x29: // {dad h}
-		if ((0xFFFF - hl.r16) < hl.r16) fl |= 0x01; else fl &= 0xFE;
-		hl.r16 <<= 1;
-		NumTicks = 10;
 		break;
-	case 0x2A: // {lhld addr}
+	case 0x28: // jr z,d8
+		mRes = memory->getByte(pc, &b1);
+		pc--;
+		if (F & Zf == Zf) {
+			pc += (int8_t)b1;
+			NumTicks = 12;
+		}
+		else {
+			pc += 2;
+			NumTicks = 7;
+		}
+		break;
+	case 0x29: // {add hl, hl}
+		HL = add16(HL, HL);
+		NumTicks = 11;
+		break;
+	case 0x2A: // {ld hl, (addr)}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		mRes = memory->getWord(addr, &hl.r16);
+		mRes = memory->getWord(addr, &HL);
 		NumTicks = 16;
 		break;
-	case 0x2B: // {dcx h}
-		hl.r16--;
-		NumTicks = 5;
+	case 0x2B: // {dec hl}
+		HL--;
+		NumTicks = 6;
 		break;
-	case 0x2C: // {inr l}
-		hl.r8.lo = inrdcr(hl.r8.lo, 0);
-		NumTicks = 5;
-		break;
-	case 0x2D: // {dcr l}
-		hl.r8.lo = inrdcr(hl.r8.lo, 1);
-		NumTicks = 5;
-		break;
-	case 0x2E: // {mvi l}
-		mRes = memory->getByte(pc++, &hl.r8.lo);
-		NumTicks = 7;
-		break;
-	case 0x2F: // {cma}
-		a ^= 0xff;
+	case 0x2C: // {inc l}
+		L = inrdcr(L, 0);
 		NumTicks = 4;
 		break;
-	case 0x31: // {lxi sp,d16}
+	case 0x2D: // {dec l}
+		L = inrdcr(L, 1);
+		NumTicks = 4;
+		break;
+	case 0x2E: // {ld l, d8}
+		mRes = memory->getByte(pc++, &L);
+		NumTicks = 7;
+		break;
+	case 0x2F: // {cpl}
+		F = (uint8_t)((F & (Sf | Zf | PVf | Cf) ^ Cf) | (((A = ~A) & (F3f | F5f)) | Hf | Nf));
+		NumTicks = 4;
+		break;
+	case 0x30: // jr nc, d8
+		mRes = memory->getByte(pc, &b1);
+		pc--;
+		if (F & Cf == 0) {
+			pc += (int8_t)b1;
+			NumTicks = 12;
+		}
+		else {
+			pc += 2;
+			NumTicks = 7;
+		}
+		break;
+	case 0x31: // {ld sp, d16}
 		mRes = memory->getWord(pc, &sp);
 		pc += 2;
 		NumTicks = 10;
 		break;
-	case 0x32: // {sta addr}
+	case 0x32: // {ld (addr), a}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		mRes = memory->setByte(addr, a);
+		mRes = memory->setByte(addr, A);
 		NumTicks = 13;
 		break;
-	case 0x33: // {inx sp}
+	case 0x33: // {inc sp}
 		sp++;
-		NumTicks = 5;
+		NumTicks = 6;
 		break;
-	case 0x34: // {inr m}
-		mRes = memory->getByte(hl.r16, &dopcode);
+	case 0x34: // {inc (hl)}
+		mRes = memory->getByte(HL, &dopcode);
 		dopcode = inrdcr(dopcode, 0);
-		mRes = memory->setByte(hl.r16, dopcode);
-		NumTicks = 10;
+		mRes = memory->setByte(HL, dopcode);
+		NumTicks = 11;
 		break;
-	case 0x35: // {dcr m}
-		mRes = memory->getByte(hl.r16, &dopcode);
+	case 0x35: // {dec (hl)}
+		mRes = memory->getByte(HL, &dopcode);
 		dopcode = inrdcr(dopcode, 1);
-		mRes = memory->setByte(hl.r16, dopcode);
-		NumTicks = 10;
+		mRes = memory->setByte(HL, dopcode);
+		NumTicks = 11;
 		break;
-	case 0x36: // {mvi m}
+	case 0x36: // {ld (hl), d8}
 		mRes = memory->getByte(pc++, &dopcode);
-		mRes = memory->setByte(hl.r16, dopcode);
+		mRes = memory->setByte(HL, dopcode);
 		NumTicks = 10;
 		break;
-	case 0x37: // {stc}
-		fl |= 0x01;
+	case 0x37: // {scf}
+		F = (uint8_t)((F & (Sf | Zf | PVf)) | (A & (F3f | F5f)) | Cf);
 		NumTicks = 4;
 		break;
-	case 0x39: // {dad sp}
-		if ((0xFFFF - hl.r16) < sp) fl |= 0x01; else fl &= 0xFE;
-		hl.r16 += sp;
-		NumTicks = 10;
+	case 0x38: // jr c, d8
+		mRes = memory->getByte(pc, &b1);
+		pc--;
+		if (F & Cf == Cf) {
+			pc += (int8_t)b1;
+			NumTicks = 12;
+		}
+		else {
+			pc += 2;
+			NumTicks = 7;
+		}
 		break;
-	case 0x3A: // {lda addr}
+	case 0x39: // {add hl, sp}
+		HL = add16(HL, sp);
+		NumTicks = 11;
+		break;
+	case 0x3A: // {ld a, (addr)}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		mRes = memory->getByte(addr, &a);
+		mRes = memory->getByte(addr, &A);
 		NumTicks = 13;
 		break;
-	case 0x3B: // {dcx sp}
+	case 0x3B: // {dec sp}
 		sp--;
-		NumTicks = 5;
+		NumTicks = 6;
 		break;
-	case 0x3C: // {inr a}
-		a = inrdcr(a, 0);
-		NumTicks = 5;
-		break;
-	case 0x3D: // {dcr a}
-		a = inrdcr(a, 1);
-		NumTicks = 5;
-		break;
-	case 0x3E: // {mvi a,b1}
-		mRes = memory->getByte(pc++, &a);
-		NumTicks = 7;
-		break;
-	case 0x3F: // {cmc}
-		fl ^= 0x01;
+	case 0x3C: // {inc a}
+		A = inrdcr(A, 0);
 		NumTicks = 4;
 		break;
-	case 0x40: // {mov b,b}
-		NumTicks = 5;
+	case 0x3D: // {dec a}
+		A = inrdcr(A, 1);
+		NumTicks = 4;
 		break;
-	case 0x41: // {mov b,c}
-		NumTicks = 5;
-		break;
-	case 0x42: // {mov b,d}
-		bc.r8.hi = de.r8.hi;
-		NumTicks = 5;
-		break;
-	case 0x43: // {mov b,e}
-		bc.r8.hi = de.r8.lo;
-		NumTicks = 5;
-		break;
-	case 0x44: // {mov b,h}
-		bc.r8.hi = hl.r8.hi;
-		NumTicks = 5;
-		break;
-	case 0x45: // {mov b,l}
-		bc.r8.hi = hl.r8.lo;
-		NumTicks = 5;
-		break;
-	case 0x46: // {mov b,m}
-		mRes = memory->getByte(hl.r16, &bc.r8.hi);
+	case 0x3E: // {ld a,b1}
+		mRes = memory->getByte(pc++, &A);
 		NumTicks = 7;
 		break;
-	case 0x47: // {mov b,a}
-		bc.r8.hi = a;
-		NumTicks = 5;
+	case 0x3F: // {ccf}
+	{
+		uint8_t oldCf = (F & Cf) << 4;
+		F = (uint8_t)((F & (Sf | Zf | PVf | Cf) ^ Cf) | (A & (F3f | F5f)) | oldCf);
+		NumTicks = 4;
+	}
 		break;
-	case 0x48: // {mov c,b}
-		bc.r8.lo = bc.r8.hi;
-		NumTicks = 5;
+	case 0x40: // {ld b,b}
+		NumTicks = 4;
 		break;
-	case 0x49: // {mov c,c}
-		NumTicks = 5;
+	case 0x41: // {ld b,c}
+		B = C;
+		NumTicks = 4;
 		break;
-	case 0x4A: // {mov c,d}
-		bc.r8.lo = de.r8.hi;
-		NumTicks = 5;
+	case 0x42: // {ld b,d}
+		B = D;
+		NumTicks = 4;
 		break;
-	case 0x4B: // {mov c,e}
-		bc.r8.lo = de.r8.lo;
-		NumTicks = 5;
+	case 0x43: // {ld b,e}
+		D = E;
+		NumTicks = 4;
 		break;
-	case 0x4C: // {mov c,h}
-		bc.r8.lo = hl.r8.hi;
-		NumTicks = 5;
+	case 0x44: // {ld b,h}
+		B = H;
+		NumTicks = 4;
 		break;
-	case 0x4D: // {mov c,l}
-		bc.r8.lo = hl.r8.lo;
-		NumTicks = 5;
+	case 0x45: // {ld b,l}
+		B = L;
+		NumTicks = 4;
 		break;
-	case 0x4E: // {mov c,m}
-		mRes = memory->getByte(hl.r16, &bc.r8.lo);
+	case 0x46: // {ld b,(hl)}
+		mRes = memory->getByte(HL, &B);
 		NumTicks = 7;
 		break;
-	case 0x4F: // {mov c,a}
-		bc.r8.lo = a;
-		NumTicks = 5;
+	case 0x47: // {ld b,a}
+		B = A;
+		NumTicks = 4;
 		break;
-	case 0x50: // {mov d,b}
-		de.r8.hi = bc.r8.hi;
-		NumTicks = 5;
+	case 0x48: // {ld c,b}
+		C = B;
+		NumTicks = 4;
 		break;
-	case 0x51: // {mov d,c}
-		de.r8.hi = bc.r8.lo;
-		NumTicks = 5;
+	case 0x49: // {ld c,c}
+		NumTicks = 4;
 		break;
-	case 0x52: // {mov d,d}
-		NumTicks = 5;
+	case 0x4A: // {ld c,d}
+		C = D;
+		NumTicks = 4;
 		break;
-	case 0x53: // {mov d,e}
-		de.r8.hi = de.r8.lo;
-		NumTicks = 5;
+	case 0x4B: // {ld c,e}
+		C = E;
+		NumTicks = 4;
 		break;
-	case 0x54: // {mov d,h}
-		de.r8.hi = hl.r8.hi;
-		NumTicks = 5;
+	case 0x4C: // {ld c,h}
+		C = H;
+		NumTicks = 4;
 		break;
-	case 0x55: // {mov d,l}
-		de.r8.hi = hl.r8.lo;
-		NumTicks = 5;
+	case 0x4D: // {ld c,l}
+		C = L;
+		NumTicks = 4;
 		break;
-	case 0x56: // {mov d,m}
-		mRes = memory->getByte(hl.r16, &de.r8.hi);
+	case 0x4E: // {ld c,(hl)}
+		mRes = memory->getByte(HL, &C);
 		NumTicks = 7;
 		break;
-	case 0x57: // {mov d,a}
-		de.r8.hi = a;
-		NumTicks = 5;
+	case 0x4F: // {ld c,a}
+		C = A;
+		NumTicks = 4;
 		break;
-	case 0x58: // {mov e,b}
-		de.r8.lo = bc.r8.hi;
-		NumTicks = 5;
+	case 0x50: // {ld d,b}
+		D = B;
+		NumTicks = 4;
 		break;
-	case 0x59: // {mov e,c}
-		de.r8.lo = bc.r8.lo;
-		NumTicks = 5;
+	case 0x51: // {ld d,c}
+		D = C;
+		NumTicks = 4;
 		break;
-	case 0x5A: // {mov e,d}
-		de.r8.lo = de.r8.hi;
-		NumTicks = 5;
+	case 0x52: // {ld d,d}
+		NumTicks = 4;
 		break;
-	case 0x5B: // {mov e,e}
-		NumTicks = 5;
+	case 0x53: // {ld d,e}
+		D = E;
+		NumTicks = 4;
 		break;
-	case 0x5C: // {mov e,h}
-		de.r8.lo = hl.r8.hi;
-		NumTicks = 5;
+	case 0x54: // {ld d,h}
+		D = H;
+		NumTicks = 4;
 		break;
-	case 0x5D: // {mov e,l}
-		de.r8.lo = hl.r8.lo;
-		NumTicks = 5;
+	case 0x55: // {ld d,l}
+		D = L;
+		NumTicks = 4;
 		break;
-	case 0x5E: // {mov e,m}
-		mRes = memory->getByte(hl.r16, &de.r8.lo);
+	case 0x56: // {ld d,(hl)}
+		mRes = memory->getByte(HL, &D);
 		NumTicks = 7;
 		break;
-	case 0x5F: // {mov e,a}
-		de.r8.lo = a;
-		NumTicks = 5;
+	case 0x57: // {ld d,a}
+		D = A;
+		NumTicks = 4;
 		break;
-	case 0x60: // {mov h,b}
-		hl.r8.hi = bc.r8.hi;
-		NumTicks = 5;
+	case 0x58: // {ld e,b}
+		E = B;
+		NumTicks = 4;
 		break;
-	case 0x61: // {mov h,c}
-		hl.r8.hi = bc.r8.lo;
-		NumTicks = 5;
+	case 0x59: // {ld e,c}
+		E = C;
+		NumTicks = 4;
 		break;
-	case 0x62: // {mov h,d}
-		hl.r8.hi = de.r8.hi;
-		NumTicks = 5;
+	case 0x5A: // {ld e,d}
+		E = D;
+		NumTicks = 4;
 		break;
-	case 0x63: // {mov h,e}
-		hl.r8.hi = de.r8.lo;
-		NumTicks = 5;
+	case 0x5B: // {ld e,e}
+		NumTicks = 4;
 		break;
-	case 0x64: // {mov h,h}
-		NumTicks = 5;
+	case 0x5C: // {ld e,h}
+		E = H;
+		NumTicks = 4;
 		break;
-	case 0x65: // {mov h,l}
-		hl.r8.hi = hl.r8.lo;
-		NumTicks = 5;
+	case 0x5D: // {ld e,l}
+		E = L;
+		NumTicks = 4;
 		break;
-	case 0x66: // {mov h,m}
-		mRes = memory->getByte(hl.r16, &hl.r8.hi);
+	case 0x5E: // {ld e,(hl)}
+		mRes = memory->getByte(HL, &E);
 		NumTicks = 7;
 		break;
-	case 0x67: // {mov h,a}
-		hl.r8.hi = a;
-		NumTicks = 5;
+	case 0x5F: // {ld e,a}
+		E = A;
+		NumTicks = 4;
 		break;
-	case 0x68: // {mov l,b}
-		hl.r8.lo = bc.r8.hi;
-		NumTicks = 5;
+	case 0x60: // {ld h,b}
+		H = B;
+		NumTicks = 4;
 		break;
-	case 0x69: // {mov l,c}
-		hl.r8.lo = bc.r8.lo;
-		NumTicks = 5;
+	case 0x61: // {ld h,c}
+		H = C;
+		NumTicks = 4;
 		break;
-	case 0x6A: // {mov l,d}
-		hl.r8.lo = de.r8.hi;
-		NumTicks = 5;
+	case 0x62: // {ld h,d}
+		H = D;
+		NumTicks = 4;
 		break;
-	case 0x6B: // {mov l,e}
-		hl.r8.lo = de.r8.lo;
-		NumTicks = 5;
+	case 0x63: // {ld h,e}
+		H = E;
+		NumTicks = 4;
 		break;
-	case 0x6C: // {mov l,h}
-		hl.r8.lo = hl.r8.hi;
-		NumTicks = 5;
+	case 0x64: // {ld h,h}
+		NumTicks = 4;
 		break;
-	case 0x6D: // {mov l,l}
-		NumTicks = 5;
+	case 0x65: // {ld h,l}
+		H = L;
+		NumTicks = 4;
 		break;
-	case 0x6E: // {mov l,m}
-		mRes = memory->getByte(hl.r16, &hl.r8.lo);
+	case 0x66: // {ld h,(hl)}
+		mRes = memory->getByte(HL, &H);
 		NumTicks = 7;
 		break;
-	case 0x6F: // {mov l,a}
-		hl.r8.lo = a;
-		NumTicks = 5;
+	case 0x67: // {ld h,a}
+		H = A;
+		NumTicks = 4;
 		break;
-	case 0x70: // {mov m,b}
-		mRes = memory->setByte(hl.r16, bc.r8.hi);
+	case 0x68: // {ld l,b}
+		L = B;
+		NumTicks = 4;
+		break;
+	case 0x69: // {ld l,c}
+		L = C;
+		NumTicks = 4;
+		break;
+	case 0x6A: // {ld l,d}
+		L = D;
+		NumTicks = 4;
+		break;
+	case 0x6B: // {ld l,e}
+		L = E;
+		NumTicks = 4;
+		break;
+	case 0x6C: // {ld l,h}
+		L = H;
+		NumTicks = 4;
+		break;
+	case 0x6D: // {ld l,l}
+		NumTicks = 4;
+		break;
+	case 0x6E: // {ld l,(hl)}
+		mRes = memory->getByte(HL, &L);
 		NumTicks = 7;
 		break;
-	case 0x71: // {mov m,c}
-		mRes = memory->setByte(hl.r16, bc.r8.lo);
+	case 0x6F: // {ld l,a}
+		L = A;
+		NumTicks = 4;
+		break;
+	case 0x70: // {ld (hl),b}
+		mRes = memory->setByte(HL, B);
 		NumTicks = 7;
 		break;
-	case 0x72: // {mov m,d}
-		mRes = memory->setByte(hl.r16, de.r8.hi);
+	case 0x71: // {ld (hl),c}
+		mRes = memory->setByte(HL, C);
 		NumTicks = 7;
 		break;
-	case 0x73: // {mov m,e}
-		mRes = memory->setByte(hl.r16, de.r8.lo);
+	case 0x72: // {ld (hl),d}
+		mRes = memory->setByte(HL, D);
 		NumTicks = 7;
 		break;
-	case 0x74: // {mov m,h}
-		mRes = memory->setByte(hl.r16, hl.r8.hi);
+	case 0x73: // {ld (hl),e}
+		mRes = memory->setByte(HL, E);
 		NumTicks = 7;
 		break;
-	case 0x75: // {mov m,l}
-		mRes = memory->setByte(hl.r16, hl.r8.lo);
+	case 0x74: // {ld (hl),h}
+		mRes = memory->setByte(HL, H);
 		NumTicks = 7;
 		break;
-	case 0x76: // {hlt}
+	case 0x75: // {ld (hl),l}
+		mRes = memory->setByte(HL, L);
+		NumTicks = 7;
+		break;
+	case 0x76: // {halt}
 		HLT = true;
+		NumTicks = 4;
+		break;
+	case 0x77: // ld (hl),a}
+		mRes = memory->setByte(HL, A);
 		NumTicks = 7;
 		break;
-	case 0x77: // {mov m,a}
-		mRes = memory->setByte(hl.r16, a);
+	case 0x78: // {ld a,b}
+		A = B;
+		NumTicks = 4;
+		break;
+	case 0x79: // {ld a,c}
+		A = C;
+		NumTicks = 4;
+		break;
+	case 0x7A: // {ld a,d}
+		A = D;
+		NumTicks = 4;
+		break;
+	case 0x7B: // {ld a,e}
+		A = E;
+		NumTicks = 4;
+		break;
+	case 0x7C: // {ld a,h}
+		A = H;
+		NumTicks = 4;
+		break;
+	case 0x7D: // {ld a,l}
+		A = L;
+		NumTicks = 4;
+		break;
+	case 0x7E: // {ld a,(HL)}
+		mRes = memory->getByte(HL, &A);
 		NumTicks = 7;
 		break;
-	case 0x78: // {mov a,b}
-		a = bc.r8.hi;
-		NumTicks = 5;
-		break;
-	case 0x79: // {mov a,c}
-		a = bc.r8.lo;
-		NumTicks = 5;
-		break;
-	case 0x7A: // {mov a,d}
-		a = de.r8.hi;
-		NumTicks = 5;
-		break;
-	case 0x7B: // {mov a,e}
-		a = de.r8.lo;
-		NumTicks = 5;
-		break;
-	case 0x7C: // {mov a,h}
-		a = hl.r8.hi;
-		NumTicks = 5;
-		break;
-	case 0x7D: // {mov a,l}
-		a = hl.r8.lo;
-		NumTicks = 5;
-		break;
-	case 0x7E: // {mov a,m}
-		mRes = memory->getByte(hl.r16, &a);
-		NumTicks = 7;
-		break;
-	case 0x7F: // {mov a,a}
-		NumTicks = 5;
-		break;
-	case 0x80: // {add b}
-		summ(bc.r8.hi, 0, 0);
+	case 0x7F: // {ld a,a}
 		NumTicks = 4;
 		break;
-	case 0x81: // {add c}
-		summ(bc.r8.lo, 0, 0);
+	case 0x80: // {add a, b}
+		summ(B, 0, 0);
 		NumTicks = 4;
 		break;
-	case 0x82: // {add d}
-		summ(de.r8.hi, 0, 0);
+	case 0x81: // {add a, c}
+		summ(C, 0, 0);
 		NumTicks = 4;
 		break;
-	case 0x83: // {add e}
-		summ(de.r8.lo, 0, 0);
+	case 0x82: // {add a, d}
+		summ(D, 0, 0);
 		NumTicks = 4;
 		break;
-	case 0x84: // {add h}
-		summ(hl.r8.hi, 0, 0);
+	case 0x83: // {add a, e}
+		summ(E, 0, 0);
 		NumTicks = 4;
 		break;
-	case 0x85: // {add l}
-		summ(hl.r8.lo, 0, 0);
+	case 0x84: // {add a, h}
+		summ(H, 0, 0);
 		NumTicks = 4;
 		break;
-	case 0x86: // {add m}
+	case 0x85: // {add a, l}
+		summ(L, 0, 0);
+		NumTicks = 4;
+		break;
+	case 0x86: // {add a, (hl)}
 		uint8_t tmp;
-		mRes = memory->getByte(hl.r16, &tmp);
+		mRes = memory->getByte(HL, &tmp);
 		summ(tmp, 0, 0);
 		NumTicks = 7;
 		break;
-	case 0x87: // {add a}
-		summ(a, 0, 0);
+	case 0x87: // {add a, a}
+		summ(A, 0, 0);
 		NumTicks = 4;
 		break;
-	case 0x88: // {adc b}
-		summ(bc.r8.hi, fl & 0x01, 0);
+	case 0x88: // {adc a, b}
+		summ(B, F & 0x01, 0);
 		NumTicks = 4;
 		break;
-	case 0x89: // {adc c}
-		summ(bc.r8.lo, fl & 0x01, 0);
+	case 0x89: // {adc a, c}
+		summ(C, F & 0x01, 0);
 		NumTicks = 4;
 		break;
-	case 0x8A: // {adc d}
-		summ(de.r8.hi, fl & 0x01, 0);
+	case 0x8A: // {adc a, d}
+		summ(D, F & 0x01, 0);
 		NumTicks = 4;
 		break;
-	case 0x8B: // {adc e}
-		summ(de.r8.lo, fl & 0x01, 0);
+	case 0x8B: // {adc a, e}
+		summ(E, F & 0x01, 0);
 		NumTicks = 4;
 		break;
-	case 0x8C: // {adc h}
-		summ(hl.r8.hi, fl & 0x01, 0);
+	case 0x8C: // {adc a, h}
+		summ(H, F & 0x01, 0);
 		NumTicks = 4;
 		break;
-	case 0x8D: // {adc l}
-		summ(hl.r8.lo, fl & 0x01, 0);
+	case 0x8D: // {adc a, l}
+		summ(L, F & 0x01, 0);
 		NumTicks = 4;
 		break;
-	case 0x8E: // {adc m}
-		mRes = memory->getByte(hl.r16, &b1);
-		summ(b1, fl & 0x01, 0);
+	case 0x8E: // {adc a, (hl)}
+		mRes = memory->getByte(HL, &b1);
+		summ(b1, F & 0x01, 0);
 		NumTicks = 7;
 		break;
-	case 0x8F: // {adc a}
-		summ(a, fl & 0x01, 0);
+	case 0x8F: // {adc a, a}
+		summ(A, F & 0x01, 0);
 		NumTicks = 4;
 		break;
 	case 0x90: // {sub b}
-		summ(bc.r8.hi, 0, 1);
+		summ(B, 0, 1);
 		NumTicks = 4;
 		break;
 	case 0x91: // {sub c}
-		summ(bc.r8.lo, 0, 1);
+		summ(C, 0, 1);
 		NumTicks = 4;
 		break;
 	case 0x92: // {sub d}
-		summ(de.r8.hi, 0, 1);
+		summ(D, 0, 1);
 		NumTicks = 4;
 		break;
 	case 0x93: // {sub e}
-		summ(de.r8.lo, 0, 1);
+		summ(E, 0, 1);
 		NumTicks = 4;
 		break;
 	case 0x94: // {sub h}
-		summ(hl.r8.hi, 0, 1);
+		summ(H, 0, 1);
 		NumTicks = 4;
 		break;
 	case 0x95: // {sub l}
-		summ(hl.r8.lo, 0, 1);
+		summ(L, 0, 1);
 		NumTicks = 4;
 		break;
-	case 0x96: // {sub m}
-		mRes = memory->getByte(hl.r16, &b1);
+	case 0x96: // {sub (hl)}
+		mRes = memory->getByte(HL, &b1);
 		summ(b1, 0, 1);
 		NumTicks = 7;
 		break;
 	case 0x97: // {sub a}
-		summ(a, 0, 1);
+		summ(A, 0, 1);
 		NumTicks = 4;
 		break;
-	case 0x98: // {sbb b}
-		summ(bc.r8.hi, fl & 0x01, 1);
+	case 0x98: // {sbc a, b}
+		summ(B, F & 0x01, 1);
 		NumTicks = 4;
 		break;
-	case 0x99: // {sbb c}
-		summ(bc.r8.lo, fl & 0x01, 1);
+	case 0x99: // {sbc a, c}
+		summ(C, F & 0x01, 1);
 		NumTicks = 4;
 		break;
-	case 0x9A: // {sbb d}
-		summ(de.r8.hi, fl & 0x01, 1);
+	case 0x9A: // {sbc a, d}
+		summ(D, F & 0x01, 1);
 		NumTicks = 4;
 		break;
-	case 0x9B: // {sbb e}
-		summ(de.r8.lo, fl & 0x01, 1);
+	case 0x9B: // {sbc a, e}
+		summ(E, F & 0x01, 1);
 		NumTicks = 4;
 		break;
-	case 0x9C: // {sbb h}
-		summ(hl.r8.hi, fl & 0x01, 1);
+	case 0x9C: // {sbc a, h}
+		summ(H, F & 0x01, 1);
 		NumTicks = 4;
 		break;
-	case 0x9D: // {sbb l}
-		summ(hl.r8.lo, fl & 0x01, 1);
+	case 0x9D: // {sbc a, l}
+		summ(L, F & 0x01, 1);
 		NumTicks = 4;
 		break;
-	case 0x9E: // {sbb m}
-		mRes = memory->getByte(hl.r16, &b1);
-		summ(b1, fl & 0x01, 1);
+	case 0x9E: // {sbc a, (hl)}
+		mRes = memory->getByte(HL, &b1);
+		summ(b1, F & 0x01, 1);
 		NumTicks = 7;
 		break;
-	case 0x9F: // {sbb a}
-		summ(a, fl & 0x01, 1);
+	case 0x9F: // {sbc a, a}
+		summ(A, F & 0x01, 1);
 		NumTicks = 4;
 		break;
-	case 0xA0: // {ana b}
-		olda = a | bc.r8.hi;
-		olda >>= 3;
-		a &= bc.r8.hi;
-		setfl();
-		if ((olda & 0x01) == 1) fl |= 0x10; else fl &= 0xEF;
-		fl &= 0xFE;
+	case 0xA0: // {and b}
+		A &= B;
+		setfl(true);
 		NumTicks = 4;
 		break;
-	case 0xA1: // {ana c}
-		olda = a | bc.r8.lo;
-		olda >>= 3;
-		a &= bc.r8.lo;
-		setfl();
-		if ((olda & 0x01) == 1) fl |= 0x10; else fl &= 0xEF;
-		fl &= 0xFE;
+	case 0xA1: // {and c}
+		A &= C;
+		setfl(true);
 		NumTicks = 4;
 		break;
-	case 0xA2: // {ana d}
-		olda = a | de.r8.hi;
-		olda >>= 3;
-		a &= de.r8.hi;
-		setfl();
-		if ((olda & 0x01) == 1) fl |= 0x10; else fl &= 0xEF;
-		fl &= 0xFE;
+	case 0xA2: // {and d}
+		A &= D;
+		setfl(true);
 		NumTicks = 4;
 		break;
-	case 0xA3: // {ana e}
-		olda = a | de.r8.lo;
-		olda >>= 3;
-		a &= de.r8.lo;
-		setfl();
-		if ((olda & 0x01) == 1) fl |= 0x10; else fl &= 0xEF;
-		fl &= 0xFE;
+	case 0xA3: // {and e}
+		A &= E;
+		setfl(true);
 		NumTicks = 4;
 		break;
-	case 0xA4: // {ana h}
-		olda = a | hl.r8.hi;
-		olda >>= 3;
-		a &= hl.r8.hi;
-		setfl();
-		if ((olda & 0x01) == 1) fl |= 0x10; else fl &= 0xEF;
-		fl &= 0xFE;
+	case 0xA4: // {and h}
+		A &= H;
+		setfl(true);
 		NumTicks = 4;
 		break;
-	case 0xA5: // {ana l}
-		olda = a | hl.r8.lo;
-		olda >>= 3;
-		a &= hl.r8.lo;
-		setfl();
-		if ((olda & 0x01) == 1) fl |= 0x10; else fl &= 0xEF;
-		fl &= 0xFE;
+	case 0xA5: // {and l}
+		A &= L;
+		setfl(true);
 		NumTicks = 4;
 		break;
-	case 0xA6: // {ana m}
-		mRes = memory->getByte(hl.r16, &b1);
-		olda = a | b1;
-		olda >>= 3;
-		a &= b1;
-		setfl();
-		if ((olda & 0x01) == 1) fl |= 0x10; else fl &= 0xEF;
-		fl &= 0xFE;
+	case 0xA6: // {and (hl)}
+		mRes = memory->getByte(HL, &b1);
+		A &= b1;
+		setfl(true);
 		NumTicks = 7;
 		break;
-	case 0xA7: // {ana a}
-		olda = a | a;
-		olda >>= 3;
-		a &= a;
-		setfl();
-		if ((olda & 0x01) == 1) fl |= 0x10; else fl &= 0xEF;
-		fl &= 0xFE;
+	case 0xA7: // {and a}
+		A &= A;
+		setfl(true);
 		NumTicks = 4;
 		break;
-	case 0xA8: // {xra b}
-		a ^= bc.r8.hi;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xA8: // {xor b}
+		A ^= B;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xA9: // {xra c}
-		a ^= bc.r8.lo;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xA9: // {xor c}
+		A ^= C;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xAA: // {xra d}
-		a ^= de.r8.hi;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xAA: // {xor d}
+		A ^= D;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xAB: // {xra e}
-		a ^= de.r8.lo;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xAB: // {xor e}
+		A ^= E;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xAC: // {xra h}
-		a ^= hl.r8.hi;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xAC: // {xor h}
+		A ^= H;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xAD: // {xra l}
-		a ^= hl.r8.lo;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xAD: // {xor l}
+		A ^= L;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xAE: // {xra m}
-		mRes = memory->getByte(hl.r16, &b1);
-		a ^= b1;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xAE: // {xor (hl)}
+		mRes = memory->getByte(HL, &b1);
+		A ^= b1;
+		setfl(false);
 		NumTicks = 7;
 		break;
-	case 0xAF: // {xra a}
-		a ^= a;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xAF: // {xor a}
+		A ^= A;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xB0: // {ora b}
-		a |= bc.r8.hi;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xB0: // {or b}
+		A |= B;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xB1: // {ora c}
-		a |= bc.r8.lo;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xB1: // {or c}
+		A |= C;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xB2: // {ora d}
-		a |= de.r8.hi;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xB2: // {or d}
+		A |= D;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xB3: // {ora e}
-		a |= de.r8.lo;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xB3: // {or e}
+		A |= E;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xB4: // {ora h}
-		a |= hl.r8.hi;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xB4: // {or h}
+		A |= H;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xB5: // {ora l}
-		a |= hl.r8.lo;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xB5: // {or l}
+		A |= L;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xB6: // {ora m}
-		mRes = memory->getByte(hl.r16, &b1);
-		a |= b1;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xB6: // {or (hl)}
+		mRes = memory->getByte(HL, &b1);
+		A |= b1;
+		setfl(false);
 		NumTicks = 7;
 		break;
-	case 0xB7: // {ora a}
-		a |= a;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+	case 0xB7: // {or a}
+		A |= A;
+		setfl(false);
 		NumTicks = 4;
 		break;
-	case 0xB8: // {cmp b}
-		olda = a;
-		summ(bc.r8.hi, 0, 1);
-		a = olda;
+	case 0xB8: // {cp b}
+		olda = A;
+		summ(B, 0, 1);
+		A = olda;
 		NumTicks = 4;
 		break;
-	case 0xB9: // {cmp c}
-		olda = a;
-		summ(bc.r8.lo, 0, 1);
-		a = olda;
+	case 0xB9: // {cp c}
+		olda = A;
+		summ(C, 0, 1);
+		A = olda;
 		NumTicks = 4;
 		break;
-	case 0xBA: // {cmp d}
-		olda = a;
-		summ(de.r8.hi, 0, 1);
-		a = olda;
+	case 0xBA: // {cp d}
+		olda = A;
+		summ(D, 0, 1);
+		A = olda;
 		NumTicks = 4;
 		break;
-	case 0xBB: // {cmp e}
-		olda = a;
-		summ(de.r8.lo, 0, 1);
-		a = olda;
+	case 0xBB: // {cp e}
+		olda = A;
+		summ(E, 0, 1);
+		A = olda;
 		NumTicks = 4;
 		break;
-	case 0xBC: // {cmp h}
-		olda = a;
-		summ(hl.r8.hi, 0, 1);
-		a = olda;
+	case 0xBC: // {cp h}
+		olda = A;
+		summ(H, 0, 1);
+		A = olda;
 		NumTicks = 4;
 		break;
-	case 0xBD: // {cmp l}
-		olda = a;
-		summ(hl.r8.lo, 0, 1);
-		a = olda;
+	case 0xBD: // {cp l}
+		olda = A;
+		summ(L, 0, 1);
+		A = olda;
 		NumTicks = 4;
 		break;
-	case 0xBE: // {cmp m}
-		olda = a;
-		mRes = memory->getByte(hl.r16, &dopcode);
+	case 0xBE: // {cp (hl)}
+		olda = A;
+		mRes = memory->getByte(HL, &dopcode);
 		summ(dopcode, 0, 1);
-		a = olda;
+		A = olda;
 		NumTicks = 7;
 		break;
-	case 0xBF: // {cmp a}
-		olda = a;
-		summ(a, 0, 1);
-		a = olda;
+	case 0xBF: // {cp a}
+		olda = A;
+		summ(A, 0, 1);
+		A = olda;
 		NumTicks = 4;
 		break;
-	case 0xC0: // {rnz}
-		if (((fl & 0x40) >> 6) == 0)
+	case 0xC0: // {ret nz}
+		if (FLAG(fZ) == 0)
 		{
 			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
@@ -1237,52 +1272,51 @@ uint8_t z80::execute() {
 		}
 		else NumTicks = 5;
 		break;
-	case 0xC1: // {pop b}
-		mRes = memory->getWordFromStack(sp, &bc.r16);
+	case 0xC1: // {pop bc}
+		mRes = memory->getWordFromStack(sp, &BC);
 		sp += 2;
 		NumTicks = 10;
 		break;
-	case 0xC2: // {jnz addr}
+	case 0xC2: // {jp nz, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if (((fl & 0x40) >> 6) == 0) pc = addr;
+		if (FLAG(fZ) == 0) pc = addr;
 		NumTicks = 10;
 		break;
-	case 0xC3:
-	case 0xCB: // {jmp addr}
+	case 0xC3: // {jp addr}
 		mRes = memory->getWord(pc, &pc);
 		NumTicks = 10;
 		break;
-	case 0xC4: // {cnz addr}
+	case 0xC4: // {call nz, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if (((fl & 0x40) >> 6) == 0)
+		if (FLAG(fZ) == 0)
 		{
 			sp -= 2;
 			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
-		else NumTicks = 11;
+		else NumTicks = 10;
 		break;
-	case 0xC5: // {push b}
+	case 0xC5: // {push bc}
 		sp -= 2;
-		mRes = memory->setWordToStack(sp, bc.r16);
+		mRes = memory->setWordToStack(sp, BC);
 		NumTicks = 11;
 		break;
-	case 0xC6: // {adi}
+	case 0xC6: // {add a, n}
 		mRes = memory->getByte(pc++, &b1);
 		summ(b1, 0, 0);
 		NumTicks = 7;
 		break;
-	case 0xC7: // {rst 0}
+	case 0xC7: // {rst 00h}
 		sp -= 2;;
 		mRes = memory->setWordToStack(sp, pc);
 		pc = 0;
 		NumTicks = 11;
 		break;
-	case 0xC8: // {rz}
-		if (((fl & 0x40) >> 6) == 1)
+	case 0xC8: // {ret z}
+		if (FLAG(fZ) == 1)
 		{
 			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
@@ -1290,34 +1324,33 @@ uint8_t z80::execute() {
 		}
 		else NumTicks = 5;
 		break;
-	case 0xC9:
-	case 0xD9: // {ret}
+	case 0xC9: // {ret}
 		mRes = memory->getWordFromStack(sp, &pc);
 		sp += 2;
 		NumTicks = 10;
 		break;
-	case 0xCA: // {jz addr}
+	case 0xCA: // {jp z, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if (((fl & 0x40) >> 6) == 1) pc = addr;
+		if (FLAG(fZ) == 1) pc = addr;
 		NumTicks = 10;
 		break;
-	case 0xCC: // {cz addr}
+	case 0xCB: // prefix bit operation
+		NumTicks = bitOps();
+		break;
+	case 0xCC: // {call z, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if (((fl & 0x40) >> 6) == 1)
+		if (FLAG(fZ) == 1)
 		{
 			sp -= 2;
 			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
-		else NumTicks = 11;
+		else NumTicks = 10;
 		break;
-	case 0xCD:
-	case 0xDD:
-	case 0xED:
-	case 0xFD: // {call addr}
+	case 0xCD: // {call addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
 		sp -= 2;
@@ -1325,19 +1358,19 @@ uint8_t z80::execute() {
 		pc = addr;
 		NumTicks = 17;
 		break;
-	case 0xCE: // {aci}
+	case 0xCE: // {adc a, n}
 		mRes = memory->getByte(pc++, &b1);
-		summ(b1, fl & 0x01, 0);
+		summ(b1, FLAG(fC), 0);
 		NumTicks = 7;
 		break;
-	case 0xCF: // {rst 1}
+	case 0xCF: // {rst 08h}
 		sp -= 2;;
 		mRes = memory->setWordToStack(sp, pc);
 		pc = 8;
 		NumTicks = 11;
 		break;
-	case 0xD0: // {rnc}
-		if ((fl & 0x01) == 0)
+	case 0xD0: // {ret nc}
+		if (FLAG(fC) == 0)
 		{
 			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
@@ -1345,53 +1378,56 @@ uint8_t z80::execute() {
 		}
 		else NumTicks = 5;
 		break;
-	case 0xD1: // {pop d}
-		mRes = memory->getWordFromStack(sp, &de.r16);
+	case 0xD1: // {pop de}
+		mRes = memory->getWordFromStack(sp, &DE);
 		sp += 2;
 		NumTicks = 10;
 		break;
-	case 0xD2: // {jnc addr}
+	case 0xD2: // {jp nc, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if ((fl & 0x01) == 0) pc = addr;
+		if (FLAG(fC) == 0) pc = addr;
 		NumTicks = 10;
 		break;
-	case 0xD3: // {out b1}
+	case 0xD3: // {out (n),a}
+	{
 		mRes = memory->getByte(pc++, &b1);
-		ports_out[b1] = a;
-		if (prt[b1] != NULL) prt[b1]->setPortData(b1, a);
-		NumTicks = 10;
+		uint16_t portAddr = ((uint16_t)A << 8) | b1;
+		ports_out[portAddr] = A;
+		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, A);
+		NumTicks = 11;
+	}
 		break;
-	case 0xD4: // {cnc addr}
+	case 0xD4: // {call nc, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if ((fl & 0x01) == 0)
+		if (FLAG(fC) == 0)
 		{
 			sp -= 2;
 			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
-		else NumTicks = 11;
+		else NumTicks = 10;
 		break;
-	case 0xD5: // {push d}
+	case 0xD5: // {push de}
 		sp -= 2;
-		mRes = memory->setWordToStack(sp, de.r16);
+		mRes = memory->setWordToStack(sp, DE);
 		NumTicks = 11;
 		break;
-	case 0xD6: // {sui}
+	case 0xD6: // {sub a, n}
 		mRes = memory->getByte(pc++, &b1);
 		summ(b1, 0, 1);
 		NumTicks = 7;
 		break;
-	case 0xD7: // {rst 2}
+	case 0xD7: // {rst 10h}
 		sp -= 2;;
 		mRes = memory->setWordToStack(sp, pc);
 		pc = 16;
 		NumTicks = 11;
 		break;
-	case 0xD8: // {rc}
-		if ((fl & 0x01) == 1)
+	case 0xD8: // {ret c}
+		if (FLAG(fC) == 1)
 		{
 			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
@@ -1399,43 +1435,53 @@ uint8_t z80::execute() {
 		}
 		else NumTicks = 5;
 		break;
-	case 0xDA: // {jc addr}
+	case 0xD9: //exx
+		if (currentBlock == 0) currentBlock = 1; else currentBlock = 0;
+		NumTicks = 4;
+		break;
+	case 0xDA: // {jp c, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if ((fl & 0x01) == 1) pc = addr;
+		if (FLAG(fC) == 1) pc = addr;
 		NumTicks = 10;
 		break;
-	case 0xDB: // {in port}
+	case 0xDB: // {in a, (n)}
+	{
 		mRes = memory->getByte(pc++, &b1);
-		a = ports_in[b1];
-		if (prt[b1] != NULL) a = prt[b1]->getPortData(b1);
-		NumTicks = 10;
+		uint16_t portAddr = ((uint16_t)A << 8) | b1;
+		A = ports_in[portAddr];
+		if (prt[portAddr] != NULL) A = prt[portAddr]->getPortData(b1);
+		NumTicks = 11;
+	}
 		break;
-	case 0xDC: // {cc addr}
+	case 0xDC: // {call c, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if ((fl & 0x01) == 1)
+		if (FLAG(fC) == 1)
 		{
 			sp -= 2;
 			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
-		else NumTicks = 11;
+		else NumTicks = 10;
 		break;
-	case 0xDE: // {sbi}
+	case 0xDD: 
+		NumTicks = ixOps();
+		break;
+	case 0xDE: // {sbc a, n}
 		mRes = memory->getByte(pc++, &b1);
-		summ(b1, fl & 0x01, 1);
+		summ(b1, FLAG(fC), 1);
 		NumTicks = 7;
 		break;
-	case 0xDF: // {rst 3}
+	case 0xDF: // {rst 18h}
 		sp -= 2;;
 		mRes = memory->setWordToStack(sp, pc);
 		pc = 24;
 		NumTicks = 11;
 		break;
-	case 0xE0: // {rpo}
-		if (((fl & 0x04) >> 2) == 0)
+	case 0xE0: // {ret po}
+		if (FLAG(fPV) == 0)
 		{
 			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
@@ -1443,58 +1489,54 @@ uint8_t z80::execute() {
 		}
 		else NumTicks = 5;
 		break;
-	case 0xE1: // {pop h}
-		mRes = memory->getWordFromStack(sp, &hl.r16);
+	case 0xE1: // {pop hl}
+		mRes = memory->getWordFromStack(sp, &HL);
 		sp += 2;
 		NumTicks = 10;
 		break;
-	case 0xE2: // {jpo addr}
+	case 0xE2: // {jp po, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if (((fl & 0x04) >> 2) == 0) pc = addr;
+		if (FLAG(fPV) == 0) pc = addr;
 		NumTicks = 10;
 		break;
-	case 0xE3: // {xthl}
+	case 0xE3: // {ex (sp), hl}
 		mRes = memory->getWordFromStack(sp, &addr);
-		mRes = memory->setWordToStack(sp, hl.r16);
-		hl.r16 = addr;
-		NumTicks = 18;
+		mRes = memory->setWordToStack(sp, HL);
+		HL = addr;
+		NumTicks = 19;
 		break;
-	case 0xE4: // {cpo addr}
+	case 0xE4: // {call po, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if (((fl & 0x04) >> 2) == 0)
+		if (FLAG(fPV) == 0)
 		{
 			sp -= 2;
 			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
-		else NumTicks = 11;
+		else NumTicks = 10;
 		break;
-	case 0xE5: // {push h}
+	case 0xE5: // {push hl}
 		sp -= 2;
-		mRes = memory->setWordToStack(sp, hl.r16);
+		mRes = memory->setWordToStack(sp, HL);
 		NumTicks = 11;
 		break;
-	case 0xE6: // {ani}
+	case 0xE6: // {and n}
 		mRes = memory->getByte(pc++, &b1);
-		olda = a | b1;
-		olda >>= 3;
-		a &= b1;
-		setfl();
-		fl &= 0xFE;
-		if ((olda & 0x01) == 1) fl |= 0x10; else fl &= 0xEF;
+		A &= b1;
+		setfl(true);
 		NumTicks = 7;
 		break;
-	case 0xE7: // {rst 4}
+	case 0xE7: // {rst 20h}
 		sp -= 2;;
 		mRes = memory->setWordToStack(sp, pc);
 		pc = 32;
 		NumTicks = 11;
 		break;
-	case 0xE8: // {rpe}
-		if (((fl & 0x04) >> 2) == 1)
+	case 0xE8: // {ret pe}
+		if (FLAG(fPV) == 1)
 		{
 			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
@@ -1502,48 +1544,49 @@ uint8_t z80::execute() {
 		}
 		else NumTicks = 5;
 		break;
-	case 0xE9: // {pchl}
-		pc = hl.r16;
-		NumTicks = 5;
-		break;
-	case 0xEA: // {jpe addr}
-		mRes = memory->getWord(pc, &addr);
-		if (((fl & 0x04) >> 2) == 1) pc = addr;
-		NumTicks = 10;
-		break;
-	case 0xEB: // {xchg}
-		addr = hl.r16;
-		hl.r16 = de.r16;
-		de.r16 = addr;
+	case 0xE9: // {jp (hl)}
+		pc = HL;
 		NumTicks = 4;
 		break;
-	case 0xEC: // {cpe addr}
+	case 0xEA: // {jp pe, addr}
 		mRes = memory->getWord(pc, &addr);
-		if (((fl & 0x04) >> 2) == 1)
+		if (FLAG(fPV) == 1) pc = addr;
+		NumTicks = 10;
+		break;
+	case 0xEB: // {ex de, hl}
+		addr = HL;
+		HL = DE;
+		DE = addr;
+		NumTicks = 4;
+		break;
+	case 0xEC: // {call pe, addr}
+		mRes = memory->getWord(pc, &addr);
+		if (FLAG(fPV) == 1)
 		{
 			sp -= 2;
 			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
-		else NumTicks = 11;
+		else NumTicks = 10;
 		break;
-	case 0xEE: // {xri}
+	case 0xED:
+		NumTicks = miscOps();
+		break;
+	case 0xEE: // {xor n}
 		mRes = memory->getByte(pc++, &b1);
-		a ^= b1;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+		A ^= b1;
+		setfl(false);
 		NumTicks = 7;
 		break;
-	case 0xEF: // {rst 5}
+	case 0xEF: // {rst 28h}
 		sp -= 2;;
 		mRes = memory->setWordToStack(sp, pc);
 		pc = 40;
 		NumTicks = 11;
 		break;
-	case 0xF0: // {rp}
-		if (((fl & 0x80) >> 7) == 0)
+	case 0xF0: // {ret p}
+		if (FLAG(fS) == 0)
 		{
 			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
@@ -1551,61 +1594,57 @@ uint8_t z80::execute() {
 		}
 		else NumTicks = 5;
 		break;
-	case 0xF1: // {pop psw}
+	case 0xF1: // {pop af}
 		mRes = memory->getWordFromStack(sp, &afl);
 		sp += 2;
-		fl = afl & 0xFF;
-		a = afl >> 8;
-		fl &= 0xD7;
-		fl |= 0x02;
+		F = afl & 0xFF;
+		A = afl >> 8;
 		NumTicks = 10;
 		break;
-	case 0xF2: // {jp addr}
+	case 0xF2: // {jp p, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if (((fl & 0x80) >> 7) == 0) pc = addr;
+		if (FLAG(fS) == 0) pc = addr;
 		NumTicks = 10;
 		break;
 	case 0xF3: // {di}
 		INTE = false;
 		NumTicks = 4;
 		break;
-	case 0xF4: // {cp addr}
+	case 0xF4: // {call p, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if (((fl & 0x80) >> 7) == 0)
+		if (FLAG(fS) == 0)
 		{
 			sp -= 2;
 			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
-		else NumTicks = 11;
+		else NumTicks = 10;
 		break;
-	case 0xF5: // {push psw}
+	case 0xF5: // {push af}
 		sp -= 2;
-		afl = a;
+		afl = A;
 		afl <<= 8;
-		afl |= fl;
+		afl |= F;
 		mRes = memory->setWordToStack(sp, afl);
 		NumTicks = 11;
 		break;
-	case 0xF6: // {ori}
+	case 0xF6: // {or n}
 		mRes = memory->getByte(pc++, &b1);
-		a |= b1;
-		setfl();
-		fl &= 0xFE;
-		fl &= 0xEF;
+		A |= b1;
+		setfl(false);
 		NumTicks = 7;
 		break;
-	case 0xF7: // {rst 6}
+	case 0xF7: // {rst 30h}
 		sp -= 2;;
 		mRes = memory->setWordToStack(sp, pc);
 		pc = 48;
 		NumTicks = 11;
 		break;
-	case 0xF8: // {rm}
-		if (((fl & 0x80) >> 7) == 1)
+	case 0xF8: // {ret m}
+		if (FLAG(fS) == 1)
 		{
 			mRes = memory->getWordFromStack(sp, &pc);
 			sp += 2;
@@ -1613,40 +1652,43 @@ uint8_t z80::execute() {
 		}
 		else NumTicks = 5;
 		break;
-	case 0xF9: // {sphl}
-		sp = hl.r16;
-		NumTicks = 5;
+	case 0xF9: // {ld sp, hl}
+		sp = HL;
+		NumTicks = 6;
 		break;
-	case 0xFA: // {jm addr}
+	case 0xFA: // {jp m, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if (((fl & 0x80) >> 7) == 1) pc = addr;
+		if (FLAG(fS) == 1) pc = addr;
 		NumTicks = 10;
 		break;
 	case 0xFB: // {ei}
 		INTE = true;
 		NumTicks = 4;
 		break;
-	case 0xFC: // {cm addr}
+	case 0xFC: // {call m, addr}
 		mRes = memory->getWord(pc, &addr);
 		pc += 2;
-		if (((fl & 0x80) >> 7) == 1)
+		if (FLAG(fS) == 1)
 		{
 			sp -= 2;
 			mRes = memory->setWordToStack(sp, pc);
 			pc = addr;
 			NumTicks = 17;
 		}
-		else NumTicks = 11;
+		else NumTicks = 10;
 		break;
-	case 0xFE: // {cpi}
+	case 0xFD:
+		NumTicks = iyOps();
+		break;
+	case 0xFE: // {cp n}
 		mRes = memory->getByte(pc++, &b1);
-		olda = a;
+		olda = A;
 		summ(b1, 0, 1);
-		a = olda;
+		A = olda;
 		NumTicks = 7;
 		break;
-	case 0xFF: // {rst 7}
+	case 0xFF: // {rst 38h}
 		sp -= 2;;
 		mRes = memory->setWordToStack(sp, pc);
 		pc = 56;
@@ -1664,6 +1706,31 @@ bool z80::isHalted() {
 	return HLT;
 }
 
+std::string z80::bitOpsDasm(uint16_t* addr) {
+	string s = "";
+
+	return s;
+}
+
+std::string z80::miscOpsDasm(uint16_t* addr) {
+	string s = "";
+
+	return s;
+}
+
+std::string z80::ixOpsDasm(uint16_t* addr) {
+	string s = "";
+
+	return s;
+}
+
+std::string z80::iyOpsDasm(uint16_t* addr) {
+	string s = "";
+
+	return s;
+}
+
+
 string z80::dasm(uint16_t* addr)
 {
 	string s = "";
@@ -1678,837 +1745,873 @@ string z80::dasm(uint16_t* addr)
 
 	switch (code)
 	{
-	case 0x00:
-	case 0x08:
-	case 0x10:
-	case 0x18:
-	case 0x20:
-	case 0x28:
-	case 0x30:
-	case 0x38:			//{ nop }
+	case 0x00:			//{ nop }
 		s = s + "NOP";
 		break;
-	case 0x01:			 //{ lxi b,d16 }
+	case 0x01:			 //{ ld bc,d16 }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "LXI B," + hexaddr(w1);
+		s = s + "LD BC," + decToHexWord(w1);
 		break;
-	case 0x02:			 //{ stax b }
-		s = s + "STAX B";
+	case 0x02:			 //{ ld (bc), a }
+		s = s + "LD (BC), A";
 		break;
-	case 0x03:			 //{ inx b }
-		s = s + "INX B";
+	case 0x03:			 //{ inc bc }
+		s = s + "INC BC";
 		break;
-	case 0x04:			 //{ inr b }
-		s = s + "INR B";
+	case 0x04:			 //{ inc b }
+		s = s + "INC B";
 		break;
-	case 0x05:			 //{ dcr b }
-		s = s + "DCR B";
+	case 0x05:			 //{ dec b }
+		s = s + "DEC B";
 		break;
-	case 0x06:			 //{ mvi b }
+	case 0x06:			 //{ ld b, n }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "MVI B," + hex(b1);
+		s = s + "LD B," + decToHexByte(b1);
 		break;
-	case 0x07:			//{ rlc }
-		s = s + "RLC";
+	case 0x07:			//{ rlca }
+		s = s + "RLCA";
 		break;
-	case 0x09:			//{ dad b }
-		s = s + "DAD B";
+	case 0x08:			//{ ex af, af` }
+		s = s + "EX AF, AF`";
 		break;
-	case 0x0A:			//{ ldax b }
-		s = s + "LDAX B";
+	case 0x09:			//{ add hl, bc }
+		s = s + "ADD HL, BC";
 		break;
-	case 0x0B:			//{ dcx b }
-		s = s + "DCX B";
+	case 0x0A:			//{ ld a, (bc) }
+		s = s + "LD A, (BC)";
 		break;
-	case 0x0C:			//{ inr c }
-		s = s + "INR C";
+	case 0x0B:			//{ dec bc }
+		s = s + "DEC BC";
 		break;
-	case 0x0D:			//{ dcr c }
-		s = s + "DCR C";
+	case 0x0C:			//{ inc c }
+		s = s + "INC C";
 		break;
-	case 0x0E:			//{ mvi c }
+	case 0x0D:			//{ dec c }
+		s = s + "DEC C";
+		break;
+	case 0x0E:			//{ ld c, n }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "MVI C," + hex(b1);
+		s = s + "LD C," + decToHexByte(b1);
 		break;
-	case 0x0F:			//{ rrc }
-		s = s + "RRC";
+	case 0x0F:			//{ rrca }
+		s = s + "RRCA";
 		break;
-	case 0x11: //{ lxi d,d16 }
+	case 0x10:			//{djnz d8}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "DJNZ " + decToHexByte(b1);
+		break;
+	case 0x11: //{ ld de, d16 }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "LXI D," + hexaddr(w1);
+		s = s + "LD DE," + decToHexWord(w1);
 		break;
-	case 0x12: //{ stax d }
-		s = s + "STAX D";
+	case 0x12: //{ ld (de), a }
+		s = s + "LD (DE), A";
 		break;
-	case 0x13: //{ inx d }
-		s = s + "INX D";
+	case 0x13: //{ inc de }
+		s = s + "INC DE";
 		break;
-	case 0x14: //{ inr d }
-		s = s + "INR D";
+	case 0x14: //{ inc d }
+		s = s + "INC D";
 		break;
-	case 0x15: //{ dcr d }
-		s = s + "DCR D";
+	case 0x15: //{ dec d }
+		s = s + "DEC D";
 		break;
-	case 0x16: //{ mvi d }
+	case 0x16: //{ ld d, n }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "MVI D," + hex(b1);
+		s = s + "LD D," + decToHexByte(b1);
 		break;
-	case 0x17: //{ ral }
-		s = s + "RAL";
+	case 0x17: //{ rla }
+		s = s + "RLA";
 		break;
-	case 0x19: //{ dad d }
-		s = s + "DAD D";
-		break;
-	case 0x1A: //{ ldax d }
-		s = s + "LDAX D";
-		break;
-	case 0x1B: //{ dcx d }
-		s = s + "DCX D";
-		break;
-	case 0x1C: //{ inr e }
-		s = s + "INR E";
-		break;
-	case 0x1D: //{ dcr e }
-		s = s + "DCR E";
-		break;
-	case 0x1E: //{ mvi e }
+	case 0x18:	// { jr d8 }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "MVI E," + hex(b1);
+		s = s + "JR " + decToHexByte(b1);
 		break;
-	case 0x1F: //{ rar }
-		s = s + "RAR";
+	case 0x19: //{ add hl, de }
+		s = s + "ADD HL, DE";
 		break;
-	case 0x21: //{ lxi h,d16 }
+	case 0x1A: //{ ld a, (de) }
+		s = s + "LD A, (DE)";
+		break;
+	case 0x1B: //{ dec de }
+		s = s + "DEC DE";
+		break;
+	case 0x1C: //{ inc e }
+		s = s + "INC E";
+		break;
+	case 0x1D: //{ dec e }
+		s = s + "DEC E";
+		break;
+	case 0x1E: //{ ld e, n }
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD E," + decToHexByte(b1);
+		break;
+	case 0x1F: //{ rra }
+		s = s + "RRA";
+		break;
+	case 0x20:	// { jr nz, d8 }
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "JR NZ," + decToHexByte(b1);
+		break;
+	case 0x21: //{ ld hl,d16 }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "LXI H," + hexaddr(w1);
+		s = s + "LD HL," + decToHexWord(w1);
 		break;
-	case 0x22: //{ shld addr }
+	case 0x22: //{ ld (addr), hl }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "SHLD " + hexaddr(w1);
+		s = s + "LD (" + decToHexWord(w1) + "), HL";
 		break;
-	case 0x23: //{ inx h }
-		s = s + "INX H";
+	case 0x23: //{ inc hl }
+		s = s + "INC HL";
 		break;
-	case 0x24: //{ inr h }
-		s = s + "INR H";
+	case 0x24: //{ inc h }
+		s = s + "INC H";
 		break;
-	case 0x25: //{ dcr h }
-		s = s + "DCR H";
+	case 0x25: //{ dec h }
+		s = s + "DEC H";
 		break;
-	case 0x26: //{ mvi h }
+	case 0x26: //{ ld h, n }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "MVI H," + hex(b1);
+		s = s + "LD H," + decToHexByte(b1);
 		break;
 	case 0x27: //{ daa }
 		s = s + "DAA";
 		break;
-	case 0x29: //{ dad h }
-		s = s + "DAD H";
-		break;
-	case 0x2A: //{ lhld addr }
-		mRes = memory->getWord(*addr, &w1);
-		*addr += 2;
-		s = s + "LHLD " + hexaddr(w1);
-		break;
-	case 0x2B: //{ dcx h }
-		s = s + "DCX H";
-		break;
-	case 0x2C: //{ inr l }
-		s = s + "INR L";
-		break;
-	case 0x2D: //{ dcr l }
-		s = s + "DCR L";
-		break;
-	case 0x2E: //{ mvi l }
+	case 0x28:	// { jr z, d8 }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "MVI L," + hex(b1);
+		s = s + "JR Z," + decToHexByte(b1);
 		break;
-	case 0x2F: //{ cma }
-		s = s + "CMA";
+	case 0x29: //{ add hl,hl }
+		s = s + "ADD HL, HL";
 		break;
-	case 0x31: //{ lxi sp,d16 }
+	case 0x2A: //{ ld (hl), addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "LXI SP," + hexaddr(w1);
+		s = s + "LD (HL)," + decToHexWord(w1);
 		break;
-	case 0x32: //{ sta addr }
-		mRes = memory->getWord(*addr, &w1);
-		*addr += 2;
-		s = s + "STA " + hexaddr(w1);
+	case 0x2B: //{ dec hl }
+		s = s + "DEC HL";
 		break;
-	case 0x33: //{ inx sp }
-		s = s + "INX SP";
+	case 0x2C: //{ inc l }
+		s = s + "INC L";
 		break;
-	case 0x34: //{ inr m }
-		s = s + "INR M";
+	case 0x2D: //{ dec l }
+		s = s + "DEC L";
 		break;
-	case 0x35: //{ dcr m }
-		s = s + "DCR M";
-		break;
-	case 0x36: //{ mvi m }
+	case 0x2E: //{ ld l, n }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "MVI M," + hex(b1);
+		s = s + "LD L," + decToHexByte(b1);
 		break;
-	case 0x37: //{ stc }
-		s = s + "STC";
+	case 0x2F: //{ cpl }
+		s = s + "CPL";
 		break;
-	case 0x39: //{ dad sp }
-		s = s + "DAD SP";
-		break;
-	case 0x3A: //{ lda addr }
-		mRes = memory->getWord(*addr, &w1);
-		*addr += 2;
-		s = s + "LDA " + hexaddr(w1);
-		break;
-	case 0x3B: //{ dcx sp }
-		s = s + "DCX SP";
-		break;
-	case 0x3C: //{ inr a }
-		s = s + "INR A";
-		break;
-	case 0x3D: //{ dcr a }
-		s = s + "DCR A";
-		break;
-	case 0x3E: //{ mvi a,b1 }
+	case 0x30:	// { jr nc,d8 }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "MVI A," + hex(b1);
+		s = s + "JR NC," + decToHexByte(b1);
 		break;
-	case 0x3F: //{ cmc }
-		s = s + "CMC";
-		break;
-	case 0x40: //{ mov b,b }
-		s = s + "MOV B,B";
-		break;
-	case 0x41: //{ mov b,c }
-		s = s + "MOV B,C";
-		break;
-	case 0x42: //{ mov b,d }
-		s = s + "MOV B,D";
-		break;
-	case 0x43: //{ mov b,e }
-		s = s + "MOV B,E";
-		break;
-	case 0x44: //{ mov b,h }
-		s = s + "MOV B,H";
-		break;
-	case 0x45: //{ mov b,l }
-		s = s + "MOV B,L";
-		break;
-	case 0x46: //{ mov b,m }
-		s = s + "MOV B,M";
-		break;
-	case 0x47: //{ mov b,a }
-		s = s + "MOV B,A";
-		break;
-	case 0x48: //{ mov c,b }
-		s = s + "MOV C,B";
-		break;
-	case 0x49: //{ mov c,c }
-		s = s + "MOV C,C";
-		break;
-	case 0x4A: //{ mov c,d }
-		s = s + "MOV C,D";
-		break;
-	case 0x4B: //{ mov c,e }
-		s = s + "MOV C,E";
-		break;
-	case 0x4C: //{ mov c,h }
-		s = s + "MOV C,H";
-		break;
-	case 0x4D: //{ mov c,l }
-		s = s + "MOV C,L";
-		break;
-	case 0x4E: //{ mov c,m }
-		s = s + "MOV C,M";
-		break;
-	case 0x4F: //{ mov c,a }
-		s = s + "MOV C,A";
-		break;
-	case 0x50: //{ mov d,b }
-		s = s + "MOV D,B";
-		break;
-	case 0x51: //{ mov d,c }
-		s = s + "MOV D,C";
-		break;
-	case 0x52: //{ mov d,d }
-		s = s + "MOV D,D";
-		break;
-	case 0x53: //{ mov d,e }
-		s = s + "MOV D,E";
-		break;
-	case 0x54: //{ mov d,h }
-		s = s + "MOV D,H";
-		break;
-	case 0x55: //{ mov d,l }
-		s = s + "MOV D,L";
-		break;
-	case 0x56: //{ mov d,m }
-		s = s + "MOV D,M";
-		break;
-	case 0x57: //{ mov d,a }
-		s = s + "MOV D,A";
-		break;
-	case 0x58: //{ mov e,b }
-		s = s + "MOV E,B";
-		break;
-	case 0x59: //{ mov e,c }
-		s = s + "MOV E,C";
-		break;
-	case 0x5A: //{ mov e,d }
-		s = s + "MOV E,D";
-		break;
-	case 0x5B: //{ mov e,e }
-		s = s + "MOV E,E";
-		break;
-	case 0x5C: //{ mov e,h }
-		s = s + "MOV E,H";
-		break;
-	case 0x5D: //{ mov e,l }
-		s = s + "MOV E,L";
-		break;
-	case 0x5E: //{ mov e,m }
-		s = s + "MOV E,M";
-		break;
-	case 0x5F: //{ mov e,a }
-		s = s + "MOV E,A";
-		break;
-	case 0x60: //{ mov h,b }
-		s = s + "MOV H,B";
-		break;
-	case 0x61: //{ mov h,c }
-		s = s + "MOV H,C";
-		break;
-	case 0x62: //{ mov h,d }
-		s = s + "MOV H,D";
-		break;
-	case 0x63: //{ mov h,e }
-		s = s + "MOV H,E";
-		break;
-	case 0x64: //{ mov h,h }
-		s = s + "MOV H,H";
-		break;
-	case 0x65: //{ mov h,l }
-		s = s + "MOV H,L";
-		break;
-	case 0x66: //{ mov h,m }
-		s = s + "MOV H,M";
-		break;
-	case 0x67: //{ mov h,a }
-		s = s + "MOV H,A";
-		break;
-	case 0x68: //{ mov l,b }
-		s = s + "MOV L,B";
-		break;
-	case 0x69: //{ mov l,c }
-		s = s + "MOV L,C";
-		break;
-	case 0x6A: //{ mov l,d }
-		s = s + "MOV L,D";
-		break;
-	case 0x6B: //{ mov l,e }
-		s = s + "MOV L,E";
-		break;
-	case 0x6C: //{ mov l,h }
-		s = s + "MOV L,H";
-		break;
-	case 0x6D: //{ mov l,l }
-		s = s + "MOV L,L";
-		break;
-	case 0x6E: //{ mov l,m }
-		s = s + "MOV L,M";
-		break;
-	case 0x6F: //{ mov l,a }
-		s = s + "MOV L,A";
-		break;
-	case 0x70: //{ mov m,b }
-		s = s + "MOV M,B";
-		break;
-	case 0x71: //{ mov m,c }
-		s = s + "MOV M,C";
-		break;
-	case 0x72: //{ mov m,d }
-		s = s + "MOV M,D";
-		break;
-	case 0x73: //{ mov m,e }
-		s = s + "MOV M,E";
-		break;
-	case 0x74: //{ mov m,h }
-		s = s + "MOV M,H";
-		break;
-	case 0x75: //{ mov m,l }
-		s = s + "MOV M,L";
-		break;
-	case 0x76: //{ hlt }
-		s = s + "HLT";
-		break;
-	case 0x77: //{ mov m,a }
-		s = s + "MOV M,A";
-		break;
-	case 0x78: //{ mov a,b }
-		s = s + "MOV A,B";
-		break;
-	case 0x79: //{ mov a,c }
-		s = s + "MOV A,C";
-		break;
-	case 0x7A: //{ mov a,d }
-		s = s + "MOV A,D";
-		break;
-	case 0x7B: //{ mov a,e }
-		s = s + "MOV A,E";
-		break;
-	case 0x7C: //{ mov a,h }
-		s = s + "MOV A,H";
-		break;
-	case 0x7D: //{ mov a,l }
-		s = s + "MOV A,L";
-		break;
-	case 0x7E: //{ mov a,m }
-		s = s + "MOV A,M";
-		break;
-	case 0x7F: //{ mov a,a }
-		s = s + "MOV A,A";
-		break;
-	case 0x80: //{ add b }
-		s = s + "ADD B";
-		break;
-	case 0x81: //{ add c }
-		s = s + "ADD C";
-		break;
-	case 0x82: //{ add d }
-		s = s + "ADD D";
-		break;
-	case 0x83: //{ add e }
-		s = s + "ADD E";
-		break;
-	case 0x84: //{ add h }
-		s = s + "ADD H";
-		break;
-	case 0x85: //{ add l }
-		s = s + "ADD L";
-		break;
-	case 0x86: //{ add m }
-		s = s + "ADD M";
-		break;
-	case 0x87: //{ add a }
-		s = s + "ADD A";
-		break;
-	case 0x88: //{ adc b }
-		s = s + "ADC B";
-		break;
-	case 0x89: //{ adc c }
-		s = s + "ADC C";
-		break;
-	case 0x8A: //{ adc d }
-		s = s + "ADC D";
-		break;
-	case 0x8B: //{ adc e }
-		s = s + "ADC E";
-		break;
-	case 0x8C: //{ adc h }
-		s = s + "ADC H";
-		break;
-	case 0x8D: //{ adc l }
-		s = s + "ADC L";
-		break;
-	case 0x8E: //{ adc m }
-		s = s + "ADC M";
-		break;
-	case 0x8F: //{ adc a }
-		s = s + "ADC A";
-		break;
-	case 0x90: //{ sub b }
-		s = s + "SUB B";
-		break;
-	case 0x91: //{ sub c }
-		s = s + "SUB C";
-		break;
-	case 0x92: //{ sub d }
-		s = s + "SUB D";
-		break;
-	case 0x93: //{ sub e }
-		s = s + "SUB E";
-		break;
-	case 0x94: //{ sub h }
-		s = s + "SUB H";
-		break;
-	case 0x95: //{ sub l }
-		s = s + "SUB L";
-		break;
-	case 0x96: //{ sub m }
-		s = s + "SUB M";
-		break;
-	case 0x97: //{ sub a }
-		s = s + "SUB A";
-		break;
-	case 0x98: //{ sbb b }
-		s = s + "SBB B";
-		break;
-	case 0x99: //{ sub c }
-		s = s + "SBB C";
-		break;
-	case 0x9A: //{ sub d }
-		s = s + "SBB D";
-		break;
-	case 0x9B: //{ sub e }
-		s = s + "SBB E";
-		break;
-	case 0x9C: //{ sub h }
-		s = s + "SBB H";
-		break;
-	case 0x9D: //{ sub l }
-		s = s + "SBB L";
-		break;
-	case 0x9E: //{ sub m }
-		s = s + "SBB M";
-		break;
-	case 0x9F: //{ sub a }
-		s = s + "SBB A";
-		break;
-	case 0xA0: //{ ana b }
-		s = s + "ANA B";
-		break;
-	case 0xA1: //{ ana c }
-		s = s + "ANA C";
-		break;
-	case 0xA2: //{ ana d }
-		s = s + "ANA D";
-		break;
-	case 0xA3: //{ ana e }
-		s = s + "ANA E";
-		break;
-	case 0xA4: //{ ana h }
-		s = s + "ANA H";
-		break;
-	case 0xA5: //{ ana l }
-		s = s + "ANA L";
-		break;
-	case 0xA6: //{ ana m }
-		s = s + "ANA M";
-		break;
-	case 0xA7: //{ ana a }
-		s = s + "ANA A";
-		break;
-	case 0xA8: //{ xra b }
-		s = s + "XRA B";
-		break;
-	case 0xA9: //{ xra c }
-		s = s + "XRA C";
-		break;
-	case 0xAA: //{ xra d }
-		s = s + "XRA D";
-		break;
-	case 0xAB: //{ xra e }
-		s = s + "XRA E";
-		break;
-	case 0xAC: //{ xra h }
-		s = s + "XRA H";
-		break;
-	case 0xAD: //{ xra l }
-		s = s + "XRA L";
-		break;
-	case 0xAE: //{ xra m }
-		s = s + "XRA M";
-		break;
-	case 0xAF: //{ xra a }
-		s = s + "XRA A";
-		break;
-	case 0xB0: //{ ora b }
-		s = s + "ORA B";
-		break;
-	case 0xB1: //{ ora c }
-		s = s + "ORA C";
-		break;
-	case 0xB2: //{ ora d }
-		s = s + "ORA D";
-		break;
-	case 0xB3: //{ ora e }
-		s = s + "ORA E";
-		break;
-	case 0xB4: //{ ra h }
-		s = s + "ORA H";
-		break;
-	case 0xB5: //{ ora l }
-		s = s + "ORA L";
-		break;
-	case 0xB6: //{ ora m }
-		s = s + "ORA M";
-		break;
-	case 0xB7: //{ ora a }
-		s = s + "ORA A";
-		break;
-	case 0xB8: //{ cmp b }
-		s = s + "CMP B";
-		break;
-	case 0xB9: //{ cmp c }
-		s = s + "CMP C";
-		break;
-	case 0xBA: //{ cmp d }
-		s = s + "CMP D";
-		break;
-	case 0xBB: //{ cmp e }
-		s = s + "CMP E";
-		break;
-	case 0xBC: //{ cmp h }
-		s = s + "CMP H";
-		break;
-	case 0xBD: //{ cmp l }
-		s = s + "CMP L";
-		break;
-	case 0xBE: //{ cmp m }
-		s = s + "CMP M";
-		break;
-	case 0xBF: //{ cmp a }
-		s = s + "CMP A";
-		break;
-	case 0xC0: //{ rnz }
-		s = s + "RNZ";
-		break;
-	case 0xC1: //{ pop b }
-		s = s + "POP B";
-		break;
-	case 0xC2: //{ jnz addr }
+	case 0x31: //{ ld sp,d16 }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "JNZ " + hexaddr(w1);
+		s = s + "LD SP," + decToHexWord(w1);
 		break;
-	case 0xC3:
-	case 0xCB: //{ jmp addr }
+	case 0x32: //{ ld (addr), a }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "JMP " + hexaddr(w1);
+		s = s + "LD (" + decToHexWord(w1) + "),A";
 		break;
-	case 0xC4: //{ cnz addr }
-		mRes = memory->getWord(*addr, &w1);
-		*addr += 2;
-		s = s + "CNZ " + hex(w1);
+	case 0x33: //{ inc sp }
+		s = s + "INC SP";
 		break;
-	case 0xC5: //{ push b }
-		s = s + "PUSH B";
+	case 0x34: //{ inc (hl) }
+		s = s + "INC (HL)";
 		break;
-	case 0xC6: //{ adi }
+	case 0x35: //{ dec (hl) }
+		s = s + "DEC (HL)";
+		break;
+	case 0x36: //{ ld (hl),d8 }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "ADI " + hex(b1);
+		s = s + "LD (HL)," + decToHexByte(b1);
 		break;
-	case 0xC7: //{ rst 0 }
-		s = s + "RST 0";
+	case 0x37: //{ scf }
+		s = s + "SCF";
 		break;
-	case 0xC8: //{ rz }
-		s = s + "RZ";
+	case 0x38:	// { jr c,d8 }
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "JR C," + decToHexByte(b1);
 		break;
-	case 0xC9:
-	case 0xD9: //{ ret }
+	case 0x39: //{ add hl, sp }
+		s = s + "ADD HL, SP";
+		break;
+	case 0x3A: //{ ld a, (addr) }
+		mRes = memory->getWord(*addr, &w1);
+		*addr += 2;
+		s = s + "LD A, (" + decToHexWord(w1) + ")";
+		break;
+	case 0x3B: //{ dec sp }
+		s = s + "DEC SP";
+		break;
+	case 0x3C: //{ inc a }
+		s = s + "INC A";
+		break;
+	case 0x3D: //{ dec a }
+		s = s + "DEC A";
+		break;
+	case 0x3E: //{ ld a, n }
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD A," + decToHexByte(b1);
+		break;
+	case 0x3F: //{ ccf }
+		s = s + "CCF";
+		break;
+	case 0x40: //{ ld b,b }
+		s = s + "LD B,B";
+		break;
+	case 0x41: //{ ld b,c }
+		s = s + "LD B,C";
+		break;
+	case 0x42: //{ ld b,d }
+		s = s + "LD B,D";
+		break;
+	case 0x43: //{ ld b,e }
+		s = s + "LD B,E";
+		break;
+	case 0x44: //{ ld b,h }
+		s = s + "LD B,H";
+		break;
+	case 0x45: //{ ld b,l }
+		s = s + "LD B,L";
+		break;
+	case 0x46: //{ ld b,(hl) }
+		s = s + "LD B,(HL)";
+		break;
+	case 0x47: //{ ld b,a }
+		s = s + "LD B,A";
+		break;
+	case 0x48: //{ ld c,b }
+		s = s + "LD C,B";
+		break;
+	case 0x49: //{ ld c,c }
+		s = s + "LD C,C";
+		break;
+	case 0x4A: //{ ld c,d }
+		s = s + "LD C,D";
+		break;
+	case 0x4B: //{ ld c,e }
+		s = s + "LD C,E";
+		break;
+	case 0x4C: //{ ld c,h }
+		s = s + "LD C,H";
+		break;
+	case 0x4D: //{ ld c,l }
+		s = s + "LD C,L";
+		break;
+	case 0x4E: //{ ld c,(hl) }
+		s = s + "LD C,(HL)";
+		break;
+	case 0x4F: //{ ld c,a }
+		s = s + "LD C,A";
+		break;
+	case 0x50: //{ ld d,b }
+		s = s + "LD D,B";
+		break;
+	case 0x51: //{ ld d,c }
+		s = s + "LD D,C";
+		break;
+	case 0x52: //{ ld d,d }
+		s = s + "LD D,D";
+		break;
+	case 0x53: //{ ld d,e }
+		s = s + "LD D,E";
+		break;
+	case 0x54: //{ ld d,h }
+		s = s + "LD D,H";
+		break;
+	case 0x55: //{ ld d,l }
+		s = s + "LD D,L";
+		break;
+	case 0x56: //{ ld d,(hl) }
+		s = s + "LD D,(HL)";
+		break;
+	case 0x57: //{ ld d,a }
+		s = s + "LD D,A";
+		break;
+	case 0x58: //{ ld e,b }
+		s = s + "LD E,B";
+		break;
+	case 0x59: //{ ld e,c }
+		s = s + "LD E,C";
+		break;
+	case 0x5A: //{ ld e,d }
+		s = s + "LD E,D";
+		break;
+	case 0x5B: //{ ld e,e }
+		s = s + "LD E,E";
+		break;
+	case 0x5C: //{ ld e,h }
+		s = s + "LD E,H";
+		break;
+	case 0x5D: //{ ld e,l }
+		s = s + "LD E,L";
+		break;
+	case 0x5E: //{ ld e,(hl) }
+		s = s + "LD E,(HL)";
+		break;
+	case 0x5F: //{ ld e,a }
+		s = s + "LD E,A";
+		break;
+	case 0x60: //{ ld h,b }
+		s = s + "LD H,B";
+		break;
+	case 0x61: //{ ld h,c }
+		s = s + "LD H,C";
+		break;
+	case 0x62: //{ ld h,d }
+		s = s + "LD H,D";
+		break;
+	case 0x63: //{ ld h,e }
+		s = s + "LD H,E";
+		break;
+	case 0x64: //{ ld h,h }
+		s = s + "LD H,H";
+		break;
+	case 0x65: //{ ld h,l }
+		s = s + "LD H,L";
+		break;
+	case 0x66: //{ ld h,(hl) }
+		s = s + "LD H,(HL)";
+		break;
+	case 0x67: //{ ld h,a }
+		s = s + "LD H,A";
+		break;
+	case 0x68: //{ ld l,b }
+		s = s + "LD L,B";
+		break;
+	case 0x69: //{ ld l,c }
+		s = s + "LD L,C";
+		break;
+	case 0x6A: //{ ld l,d }
+		s = s + "LD L,D";
+		break;
+	case 0x6B: //{ ld l,e }
+		s = s + "LD L,E";
+		break;
+	case 0x6C: //{ ld l,h }
+		s = s + "LD L,H";
+		break;
+	case 0x6D: //{ ld l,l }
+		s = s + "LD L,L";
+		break;
+	case 0x6E: //{ ld l,(hl) }
+		s = s + "LD L,(HL)";
+		break;
+	case 0x6F: //{ ld l,a }
+		s = s + "LD L,A";
+		break;
+	case 0x70: //{ ld (hl),b }
+		s = s + "LD (HL),B";
+		break;
+	case 0x71: //{ ld (hl),c }
+		s = s + "LD (HL),C";
+		break;
+	case 0x72: //{ ld (hl),d }
+		s = s + "LD (HL),D";
+		break;
+	case 0x73: //{ ld (hl),e }
+		s = s + "LD (HL),E";
+		break;
+	case 0x74: //{ ld (hl),h }
+		s = s + "LD (HL),H";
+		break;
+	case 0x75: //{ ld (hl),l }
+		s = s + "LD (HL),L";
+		break;
+	case 0x76: //{ halt }
+		s = s + "HALT";
+		break;
+	case 0x77: //{ ld (hl),a }
+		s = s + "LD (HL),A";
+		break;
+	case 0x78: //{ ld a,b }
+		s = s + "LD A,B";
+		break;
+	case 0x79: //{ ld a,c }
+		s = s + "LD A,C";
+		break;
+	case 0x7A: //{ ld a,d }
+		s = s + "LD A,D";
+		break;
+	case 0x7B: //{ ld a,e }
+		s = s + "LD A,E";
+		break;
+	case 0x7C: //{ ld a,h }
+		s = s + "LD A,H";
+		break;
+	case 0x7D: //{ ld a,l }
+		s = s + "LD A,L";
+		break;
+	case 0x7E: //{ ld a,(hl) }
+		s = s + "LD A,(HL)";
+		break;
+	case 0x7F: //{ ld a,a }
+		s = s + "LD A,A";
+		break;
+	case 0x80: //{ add a,b }
+		s = s + "ADD A,B";
+		break;
+	case 0x81: //{ add a,c }
+		s = s + "ADD A,C";
+		break;
+	case 0x82: //{ add a,d }
+		s = s + "ADD A,D";
+		break;
+	case 0x83: //{ add a,e }
+		s = s + "ADD A,E";
+		break;
+	case 0x84: //{ add a,h }
+		s = s + "ADD A,H";
+		break;
+	case 0x85: //{ add a,l }
+		s = s + "ADD A,L";
+		break;
+	case 0x86: //{ add a,(hl) }
+		s = s + "ADD A,(HL)";
+		break;
+	case 0x87: //{ add a,a }
+		s = s + "ADD A,A";
+		break;
+	case 0x88: //{ adc a,b }
+		s = s + "ADC A,B";
+		break;
+	case 0x89: //{ adc a,c }
+		s = s + "ADC A,C";
+		break;
+	case 0x8A: //{ adc a,d }
+		s = s + "ADC A,D";
+		break;
+	case 0x8B: //{ adc a,e }
+		s = s + "ADC A,E";
+		break;
+	case 0x8C: //{ adc a,h }
+		s = s + "ADC A,H";
+		break;
+	case 0x8D: //{ adc a,l }
+		s = s + "ADC A,L";
+		break;
+	case 0x8E: //{ adc a,()hl }
+		s = s + "ADC A,(HL)";
+		break;
+	case 0x8F: //{ adc a,a }
+		s = s + "ADC A,A";
+		break;
+	case 0x90: //{ sub a,b }
+		s = s + "SUB A,B";
+		break;
+	case 0x91: //{ sub a,c }
+		s = s + "SUB A,C";
+		break;
+	case 0x92: //{ sub a,d }
+		s = s + "SUB A,D";
+		break;
+	case 0x93: //{ sub a,e }
+		s = s + "SUB A,E";
+		break;
+	case 0x94: //{ sub a,h }
+		s = s + "SUB A,H";
+		break;
+	case 0x95: //{ sub a,l }
+		s = s + "SUB A,L";
+		break;
+	case 0x96: //{ sub a,(hl) }
+		s = s + "SUB A,(HL)";
+		break;
+	case 0x97: //{ sub a,a }
+		s = s + "SUB A,A";
+		break;
+	case 0x98: //{ sbc a,b }
+		s = s + "SBC A,B";
+		break;
+	case 0x99: //{ sbc a,c }
+		s = s + "SBC A,C";
+		break;
+	case 0x9A: //{ sbc a,d }
+		s = s + "SBC A,D";
+		break;
+	case 0x9B: //{ sbc a,e }
+		s = s + "SBC A,E";
+		break;
+	case 0x9C: //{ sbc a,h }
+		s = s + "SBC A,H";
+		break;
+	case 0x9D: //{ sbc a,l }
+		s = s + "SBC A,L";
+		break;
+	case 0x9E: //{ sbc a,(hl) }
+		s = s + "SBC A,(HL)";
+		break;
+	case 0x9F: //{ sbc a,a }
+		s = s + "SBC A,A";
+		break;
+	case 0xA0: //{ and a,b }
+		s = s + "AND A,B";
+		break;
+	case 0xA1: //{ and a,c }
+		s = s + "AND A,C";
+		break;
+	case 0xA2: //{ and a,d }
+		s = s + "AND A,D";
+		break;
+	case 0xA3: //{ and a,e }
+		s = s + "AND A,E";
+		break;
+	case 0xA4: //{ and a,h }
+		s = s + "AND A,H";
+		break;
+	case 0xA5: //{ and a,l }
+		s = s + "AND A,L";
+		break;
+	case 0xA6: //{ and a,(hl) }
+		s = s + "AND A,(HL)";
+		break;
+	case 0xA7: //{ and a,a }
+		s = s + "AND A,A";
+		break;
+	case 0xA8: //{ xor a,b }
+		s = s + "XOR A,B";
+		break;
+	case 0xA9: //{ xor a,c }
+		s = s + "XOR A,C";
+		break;
+	case 0xAA: //{ xor a,d }
+		s = s + "XOR A,D";
+		break;
+	case 0xAB: //{ xor a,e }
+		s = s + "XOR A,E";
+		break;
+	case 0xAC: //{ xor a,h }
+		s = s + "XOR A,H";
+		break;
+	case 0xAD: //{ xor a,l }
+		s = s + "XOR A,L";
+		break;
+	case 0xAE: //{ xor a,(hl) }
+		s = s + "XOR A,(HL)";
+		break;
+	case 0xAF: //{ xor a,a }
+		s = s + "XOR A,A";
+		break;
+	case 0xB0: //{ or a,b }
+		s = s + "OR A,B";
+		break;
+	case 0xB1: //{ or a,c }
+		s = s + "OR A,C";
+		break;
+	case 0xB2: //{ or a,d }
+		s = s + "OR A,D";
+		break;
+	case 0xB3: //{ or a,e }
+		s = s + "OR A,E";
+		break;
+	case 0xB4: //{ or a,h }
+		s = s + "OR A,H";
+		break;
+	case 0xB5: //{ or a,l }
+		s = s + "OR A,L";
+		break;
+	case 0xB6: //{ or a,(hl) }
+		s = s + "OR A,(HL)";
+		break;
+	case 0xB7: //{ or a,a }
+		s = s + "OR A,A";
+		break;
+	case 0xB8: //{ cp a,b }
+		s = s + "CP A,B";
+		break;
+	case 0xB9: //{ cp a,c }
+		s = s + "CP A,C";
+		break;
+	case 0xBA: //{ cp a,d }
+		s = s + "CP A,D";
+		break;
+	case 0xBB: //{ cp a,e }
+		s = s + "CP A,E";
+		break;
+	case 0xBC: //{ cp a,h }
+		s = s + "CP A,H";
+		break;
+	case 0xBD: //{ cp a,l }
+		s = s + "CP A,L";
+		break;
+	case 0xBE: //{ cp a,(hl) }
+		s = s + "CP A,(HL)";
+		break;
+	case 0xBF: //{ cp a,a }
+		s = s + "CP A,A";
+		break;
+	case 0xC0: //{ ret nz }
+		s = s + "RET NZ";
+		break;
+	case 0xC1: //{ pop bc }
+		s = s + "POP BC";
+		break;
+	case 0xC2: //{ jp nz, addr }
+		mRes = memory->getWord(*addr, &w1);
+		*addr += 2;
+		s = s + "JP NZ," + decToHexWord(w1);
+		break;
+	case 0xC3: //{ jp addr }
+		mRes = memory->getWord(*addr, &w1);
+		*addr += 2;
+		s = s + "JP " + decToHexWord(w1);
+		break;
+	case 0xC4: //{ call nz, addr }
+		mRes = memory->getWord(*addr, &w1);
+		*addr += 2;
+		s = s + "CALL NZ," + decToHexWord(w1);
+		break;
+	case 0xC5: //{ push bc }
+		s = s + "PUSH BC";
+		break;
+	case 0xC6: //{ add a,n}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "ADD A," + decToHexByte(b1);
+		break;
+	case 0xC7: //{ rst 00h }
+		s = s + "RST 00h";
+		break;
+	case 0xC8: //{ ret z }
+		s = s + "RET Z";
+		break;
+	case 0xC9: //{ ret }
 		s = s + "RET";
 		break;
-	case 0xCA: //{ jz addr }
+	case 0xCA: //{ jp z, addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "JZ " + hexaddr(w1);
+		s = s + "JP Z," + decToHexWord(w1);
 		break;
-	case 0xCC: //{ cz addr }
+	case 0xCB: // bit ops
+		s = s + bitOpsDasm(addr);
+		break;
+	case 0xCC: //{ call z, addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "CZ " + hexaddr(w1);
+		s = s + "CALL Z," + decToHexWord(w1);
 		break;
-	case 0xCD:
-	case 0xDD:
-	case 0xED:
-	case 0xFD: //{ call addr }
+	case 0xCD: //{ call addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "CALL " + hexaddr(w1);
+		s = s + "CALL " + decToHexWord(w1);
 		break;
-	case 0xCE: //{ aci }
+	case 0xCE: //{ adc a,n }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "ACI " + hex(b1);
+		s = s + "ADC A," + decToHexByte(b1);
 		break;
-	case 0xCF: //{ rst 1 }
-		s = s + "RST 1";
+	case 0xCF: //{ rst 08h }
+		s = s + "RST 08H";
 		break;
-	case 0xD0: //{ rnc }
-		s = s + "RNC";
+	case 0xD0: //{ ret nc }
+		s = s + "RET NC";
 		break;
-	case 0xD1: //{ pop d }
-		s = s + "POP D";
+	case 0xD1: //{ pop de }
+		s = s + "POP DE";
 		break;
-	case 0xD2: //{ jnc addr }
+	case 0xD2: //{ jp nc, addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "JNC " + hexaddr(w1);
+		s = s + "JP NC," + decToHexWord(w1);
 		break;
-	case 0xD3: //{ out b1 }
+	case 0xD3: //{ out (n), a }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "OUT " + hex(b1);
+		s = s + "OUT (" + decToHexByte(b1) + "),A";
 		break;
-	case 0xD4: //{ cnc addr }
+	case 0xD4: //{ call nc, addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "CNC " + hexaddr(w1);
+		s = s + "CALL NC," + decToHexWord(w1);
 		break;
-	case 0xD5: //{ push d }
-		s = s + "PUSH D";
+	case 0xD5: //{ push de }
+		s = s + "PUSH DE";
 		break;
-	case 0xD6: //{ sui }
+	case 0xD6: //{ sub a,n}
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "SUI " + hex(b1);
+		s = s + "SUB A," + decToHexByte(b1);
 		break;
-	case 0xD7: //{ rst 2 }
-		s = s + "RST 2";
+	case 0xD7: //{ rst 10h }
+		s = s + "RST 10h";
 		break;
-	case 0xD8: //{ rc }
-		s = s + "RC";
+	case 0xD8: //{ ret c }
+		s = s + "RET C";
 		break;
-	case 0xDA: //{ jc addr }
+	case 0xD9: //{ exx }
+		s = s + "EXX";
+		break;
+	case 0xDA: //{ jp c, addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "JC " + hexaddr(w1);
+		s = s + "JP C," + decToHexWord(w1);
 		break;
-	case 0xDB: //{ in port }
+	case 0xDB: //{ in a, (port) }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "IN " + hex(b1);
+		s = s + "IN A,(" + decToHexByte(b1) + ")";
 		break;
-	case 0xDC: //{ cc addr }
+	case 0xDC: //{ call c, addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "CC " + hexaddr(w1);
+		s = s + "CALL C," + decToHexWord(w1);
 		break;
-	case 0xDE: //{ sbi }
+	case 0xDD: // {IX ops}
+		s = s + ixOpsDasm(addr);
+		break;
+	case 0xDE: //{ sbc a,n }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "SBI " + hex(b1);
+		s = s + "SBC A," + decToHexByte(b1);
 		break;
-	case 0xDF: //{ rst 3 }
-		s = s + "RST 3";
+	case 0xDF: //{ rst 18h }
+		s = s + "RST 18H";
 		break;
-	case 0xE0: //{ rpo }
-		s = s + "RPO";
+	case 0xE0: //{ ret po }
+		s = s + "RET PO";
 		break;
-	case 0xE1: //{ pop h }
-		s = s + "POP H";
+	case 0xE1: //{ pop hl }
+		s = s + "POP HL";
 		break;
-	case 0xE2: //{ jpo addr }
+	case 0xE2: //{ jp po, addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "JPO " + hexaddr(w1);
+		s = s + "JP PO," + decToHexWord(w1);
 		break;
-	case 0xE3: //{ xthl }
-		s = s + "XTHL";
+	case 0xE3: //{ ex (sp),hl }
+		s = s + "EX (SP),HL";
 		break;
-	case 0xE4: //{ cpo addr }
+	case 0xE4: //{ call po, addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "CPO " + hexaddr(w1);
+		s = s + "CALL PO," + decToHexWord(w1);
 		break;
-	case 0xE5: //{ push h }
-		s = s + "PUSH H";
+	case 0xE5: //{ push hl }
+		s = s + "PUSH HL";
 		break;
-	case 0xE6: //{ ani }
+	case 0xE6: //{ and a, n}
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "ANI " + hex(b1);
+		s = s + "AND A," + decToHexByte(b1);
 		break;
-	case 0xE7: //{ rst 4 }
-		s = s + "RST 4";
+	case 0xE7: //{ rst 20h }
+		s = s + "RST 20h";
 		break;
-	case 0xE8: //{ rpe }
-		s = s + "RPE";
+	case 0xE8: //{ ret pe }
+		s = s + "RET PE";
 		break;
-	case 0xE9: //{ pchl }
-		s = s + "PCHL";
+	case 0xE9: //{ jp (hl) }
+		s = s + "JP (HL)";
 		break;
-	case 0xEA: //{ jpe addr }
+	case 0xEA: //{ jp pe, addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "JPE " + hexaddr(w1);
+		s = s + "JP PE," + decToHexWord(w1);
 		break;
-	case 0xEB: //{ xchg }
-		s = s + "XCHG";
+	case 0xEB: //{ ex de, dl }
+		s = s + "EX DE,HL";
 		break;
-	case 0xEC: //{ cpe addr }
+	case 0xEC: //{ call pe, addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "CPE " + hexaddr(w1);
+		s = s + "CALL PE," + decToHexWord(w1);
 		break;
-	case 0xEE: //{ xri }
+	case 0xED: //{ misc ops }
+		s = s + miscOpsDasm(addr);
+		break;
+	case 0xEE: //{ xor a,n }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "XRI " + hex(b1);
+		s = s + "XOR A," + decToHexByte(b1);
 		break;
-	case 0xEF: //{ rst 5 }
-		s = s + "RST 5";
+	case 0xEF: //{ rst 28h }
+		s = s + "RST 28H";
 		break;
-	case 0xF0: //{ rp }
-		s = s + "RP";
+	case 0xF0: //{ ret p }
+		s = s + "RET P";
 		break;
-	case 0xF1: //{ pop psw }
-		s = s + "POP PSW";
+	case 0xF1: //{ pop af }
+		s = s + "POP AF";
 		break;
-	case 0xF2: //{ jp addr }
+	case 0xF2: //{ jp p, addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "JP " + hexaddr(w1);
+		s = s + "JP P," + decToHexWord(w1);
 		break;
 	case 0xF3: //{ di }
 		s = s + "DI";
 		break;
-	case 0xF4: //{ cp addr }
+	case 0xF4: //{ call p, addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "CP " + hexaddr(w1);
+		s = s + "CALL P," + decToHexWord(w1);
 		break;
-	case 0xF5: //{ push psw }
-		s = s + "PUSH PSW";
+	case 0xF5: //{ push af }
+		s = s + "PUSH AF";
 		break;
-	case 0xF6: //{ ori }
+	case 0xF6: //{ or a,n }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "ORI " + hex(b1);
+		s = s + "OR A," + decToHexByte(b1);
 		break;
-	case 0xF7: //{ rst 6 }
-		s = s + "RST 6";
+	case 0xF7: //{ rst 30h }
+		s = s + "RST 30H";
 		break;
-	case 0xF8: //{ rm }
-		s = s + "RM";
+	case 0xF8: //{ ret m }
+		s = s + "RET M";
 		break;
-	case 0xF9: //{ sphl }
-		s = s + "SPHL";
+	case 0xF9: //{ ld sp,hl }
+		s = s + "LD SP,HL";
 		break;
-	case 0xFA: //{ jm addr }
+	case 0xFA: //{ jp m,addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "JM " + hexaddr(w1);
+		s = s + "JP M," + decToHexWord(w1);
 		break;
 	case 0xFB: //{ ei }
 		s = s + "EI";
 		break;
-	case 0xFC: //{ cm addr }
+	case 0xFC: //{ call m, addr }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "CM " + hexaddr(w1);
+		s = s + "CALL M," + decToHexWord(w1);
 		break;
-	case 0xFE: //{ cpi }
+	case 0xFD: //IY ops
+		s = s + iyOpsDasm(addr);
+		break;
+	case 0xFE: //{ cp a,n }
 		mRes = memory->getByte(*addr, &b1);
 		*addr += 1;
-		s = s + "CPI " + hex(b1);
+		s = s + "CP A," + decToHexByte(b1);
 		break;
-	case 0xFF: //{ rst 7 }
-		s = s + "RST 7";
+	case 0xFF: //{ rst 38h }
+		s = s + "RST 38H";
 		break;
 	}
 	return s;
@@ -2517,7 +2620,7 @@ string z80::dasm(uint16_t* addr)
 string z80::disAsm(uint16_t* addr, uint8_t n) {
 	string res = "";
 	for (int i = 0; i < n; i++) {
-		res += hexaddr(*addr);
+		res += decToHexWord(*addr);
 		res += "  ";
 		res += dasm(addr);
 		res += "\n";
@@ -2542,45 +2645,51 @@ void z80::SetDebugValue(uint16_t tp, uint16_t num, std::string data) {
 	uint16_t dta = hexToDec(data);
 	if (tp == 1) {
 		switch (num) {
-		case 0: a = dta;
+		case 0: A = dta;
 			break;
-		case 1: bc.r8.hi = dta;
+		case 1: B = dta;
 			break;
-		case 2: bc.r8.lo = dta;
+		case 2: C = dta;
 			break;
-		case 3: de.r8.hi = dta;
+		case 3: D = dta;
 			break;
-		case 4: de.r8.lo = dta;
+		case 4: E = dta;
 			break;
-		case 5: hl.r8.hi = dta;
+		case 5: H = dta;
 			break;
-		case 6: hl.r8.lo = dta;
+		case 6: L = dta;
 			break;
-		case 7: bc.r16 = dta;
+		case 7: BC = dta;
 			break;
-		case 8: de.r16 = dta;
+		case 8: DE = dta;
 			break;
-		case 9: hl.r16 = dta;
+		case 9: HL = dta;
 			break;
 		case 10: sp = dta;
 			break;
 		case 11: pc = dta;
 			break;
-		case 12: fl = dta;
+		case 12: F = dta;
 			break;
 		}
 	}
 	if (tp == 2) {
 		switch (num) {
-		case 0: if (dta == 1) fl |= (1 << 7); else fl &= (~(1 << 7));
+		case 0: if (dta == 1) F |= (1 << 7); else F &= (~(1 << 7));
 			break;
-		case 1: if (dta == 1) fl |= (1 << 6); else fl &= (~(1 << 6));
+		case 1: if (dta == 1) F |= (1 << 6); else F &= (~(1 << 6));
 			break;
-		case 2: if (dta == 1) fl |= (1 << 4); else fl &= (~(1 << 4));
+		case 2: if (dta == 1) F |= (1 << 5); else F &= (~(1 << 5));
 			break;
-		case 3: if (dta == 1) fl |= (1 << 2); else fl &= (~(1 << 2));
+		case 3: if (dta == 1) F |= (1 << 4); else F &= (~(1 << 4));
 			break;
-		case 4: if (dta == 1) fl |= 1; else fl &= 0xFE;
+		case 4: if (dta == 1) F |= (1 << 3); else F &= (~(1 << 3));
+			break;
+		case 5: if (dta == 1) F |= (1 << 2); else F &= (~(1 << 2));
+			break;
+		case 6: if (dta == 1) F |= (1 << 1); else F &= (~(1 << 1));
+			break;
+		case 7: if (dta == 1) F |= 1; else F &= 0xFE;
 			break;
 		}
 	}
