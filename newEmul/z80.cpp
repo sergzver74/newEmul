@@ -253,6 +253,28 @@ void z80::setfl(bool h)
 	CLEAR(fN);
 }
 
+void z80::setfl(uint8_t data, bool c, bool h, bool n)
+{
+	uint8_t k, b;
+
+	F = data & (F3f | F5f);
+
+	b = data;
+	k = 0;
+	do
+	{
+		if (b % 2 == 1) k++;
+		b /= 2;
+	} while (b != 0);
+
+	if (data == 0) SET(fZ); else CLEAR(fZ);
+	if (data > 127) SET(fS); else CLEAR(fS);
+	if ((k & 0x01) == 0) SET(fPV); else CLEAR(fPV);
+	if (h) SET(fH); else CLEAR(fH);
+	if (h) SET(fC); else CLEAR(fC);
+	if (h) SET(fN); else CLEAR(fN);
+}
+
 
 void z80::summ(uint8_t sl, uint8_t ppp, uint8_t typ)
 {
@@ -318,8 +340,228 @@ uint8_t z80::execute(uint16_t addr) {
 	return res;
 }
 
-uint8_t z80::bitOps() {
-	return 0;
+bool z80::getRegDataFromNumRegs(uint8_t numReg, uint8_t *regData) {
+
+	bool mRes = false;
+
+	switch (numReg)
+	{
+	case 0:
+		*regData = B;
+		break;
+	case 1:
+		*regData = C;
+		break;
+	case 2:
+		*regData = D;
+		break;
+	case 3:
+		*regData = E;
+		break;
+	case 4:
+		*regData = H;
+		break;
+	case 5:
+		*regData = L;
+		break;
+	case 6:
+		mRes = memory->getByte(HL, regData);
+		break;
+	case 7:
+		*regData = A;
+		break;
+	}
+	return mRes;
+}
+
+bool z80::setRegDataOfNumRegs(uint8_t numReg, uint8_t regData) {
+	bool mRes = false;
+
+	switch (numReg)
+	{
+	case 0:
+		B = regData;
+		break;
+	case 1:
+		C = regData;
+		break;
+	case 2:
+		D = regData;
+		break;
+	case 3:
+		E = regData;
+		break;
+	case 4:
+		H = regData;
+		break;
+	case 5:
+		L = regData;
+		break;
+	case 6:
+		mRes = memory->setByte(HL, regData);
+		break;
+	case 7:
+		A = regData;
+		break;
+	}
+	
+	return mRes;
+}
+
+uint8_t z80::bitOps(bool ix, bool iy) {
+	uint8_t NumTicks = 0;
+	uint8_t code;
+	bool mRes = false;
+	uint8_t regData;
+	uint8_t oldRegData;
+	uint8_t numReg;
+	uint8_t olda;
+	uint8_t dopcode;
+	uint16_t addr;
+
+	if (!ix && !iy) {
+		mRes = memory->getByte(pc++, &code);
+		if (mRes) return 0;
+		numReg = code & 0x07;
+
+		mRes = getRegDataFromNumRegs(numReg, &regData);
+		if (mRes) return 0;
+
+	}
+	else {
+		int8_t data;
+		mRes = memory->getByte(pc++, (uint8_t*)&data);
+		if (mRes) return 0;
+		if (ix) addr = ix + data; else {
+			if (iy) addr = iy + data;
+		}
+		mRes = memory->getByte(pc++, &code);
+		if (mRes) return 0;
+		numReg = code & 0x07;
+
+		mRes = memory->getByte(addr, &regData);
+		if (mRes) return 0;
+	}
+
+	code >>= 3;
+	if ((code & 0x07) == 6) NumTicks = 15; else NumTicks = 8;
+
+	switch (code) {
+	case 0x00: // rlc
+		olda = (regData & 0x80) >> 7;
+		regData <<= 1;
+		if (olda == 0x01) regData |= 0x01; else regData &= 0xFE;
+		setfl(regData, (bool)olda, false, false);
+		break;
+	case 0x01: // rrc
+		olda = regData & 0x01;
+		regData = regData >> 1;
+		if (olda == 0x01) regData |= 0x80; else regData &= 0x7F;
+		setfl(regData, (bool)olda, false, false);
+		break;
+	case 0x02: // rl
+		olda = (regData & 0x80) >> 7;
+		dopcode = regData & 0x01;
+		regData = (regData << 1) | dopcode;
+		setfl(regData, (bool)olda, false, false);
+		break;
+	case 0x03: // rr
+		olda = regData & 0x01;
+		dopcode = regData & 0x01;
+		dopcode <<= 7;
+		regData = dopcode | (regData >> 1);
+		setfl(regData, (bool)olda, false, false);
+		break;
+	case 0x04: // sla
+		olda = (regData & 0x80) >> 7;
+		regData <<= 1;
+		setfl(regData, (bool)olda, false, false);
+		break;
+	case 0x05: // sra
+		olda = regData & 0x01;
+		dopcode = regData & 0x80;
+		regData >>= 1;
+		if (dopcode) regData |= 0x80; else regData &= 0x7F;
+		setfl(regData, (bool)olda, false, false);
+		break;
+	case 0x06: // sll
+		olda = (regData & 0x80) >> 7;
+		regData <<= 1;
+		regData |= 0x01;
+		setfl(regData, (bool)olda, false, false);
+		break;
+	case 0x07: // srl
+		olda = regData & 0x01;
+		regData >>= 1;
+		regData &= 0x7F;
+		setfl(regData, (bool)olda, false, false);
+		break;
+	case 0x08:
+	case 0x09:
+	case 0x0a:
+	case 0x0b:
+	case 0x0c:
+	case 0x0d:
+	case 0x0e:
+	case 0x0f: // bit
+		oldRegData = regData;
+		olda = code - 8;
+		dopcode = 1 << olda;
+		regData = (regData & dopcode) >> olda;
+		if (!regData) {
+			SET(fZ);
+			SET(fPV);
+			CLEAR(fS);
+			CLEAR(f3);
+			CLEAR(f5);
+		}
+		else {
+			CLEAR(fZ);
+			CLEAR(fPV);
+			if (code == 7) SET(fS);
+			if (code == 3) SET(f3);
+			if (code == 5) SET(f5);
+		}
+		SET(fH);
+		CLEAR(fN);
+		if (NumTicks == 15) NumTicks = 12;
+		regData = oldRegData;
+		break;
+	case 0x10:
+	case 0x11:
+	case 0x12:
+	case 0x13:
+	case 0x14:
+	case 0x15:
+	case 0x16:
+	case 0x17: // res
+		olda = code - 0x10;
+		dopcode = !(1 << olda);
+		regData &= dopcode;
+		break;
+	case 0x18:
+	case 0x19:
+	case 0x1a:
+	case 0x1b:
+	case 0x1c:
+	case 0x1d:
+	case 0x1e:
+	case 0x1f: // set
+		olda = code - 0x10;
+		dopcode = (1 << olda);
+		regData |= dopcode;
+		break;
+	}
+	
+	if (!ix && !iy) {
+		mRes = setRegDataOfNumRegs(numReg, regData);
+	}
+	else {
+		mRes = memory->setByte(addr, regData);
+	}
+
+	if (mRes) NumTicks = 0;
+	return NumTicks;
 }
 uint8_t z80::miscOps() {
 	return 0;
@@ -1336,7 +1578,7 @@ uint8_t z80::execute() {
 		NumTicks = 10;
 		break;
 	case 0xCB: // prefix bit operation
-		NumTicks = bitOps();
+		NumTicks = bitOps(false, false);
 		break;
 	case 0xCC: // {call z, addr}
 		mRes = memory->getWord(pc, &addr);
@@ -1706,8 +1948,140 @@ bool z80::isHalted() {
 	return HLT;
 }
 
-std::string z80::bitOpsDasm(uint16_t* addr) {
+string getRegNameFromNumRegs(uint8_t numReg) {
+	switch (numReg)
+	{
+	case 0: return "B";
+	case 1: return "C";
+	case 2: return "D";
+	case 3: return "E";
+	case 4: return "H";
+	case 5: return "L";
+	case 6: return "(HL)";
+	case 7: return "A";
+	}
+	return "";
+}
+
+std::string z80::bitOpsDasm(uint16_t* addr, bool ix, bool iy) {
 	string s = "";
+
+	uint8_t code;
+	bool mRes = false;
+	uint8_t regData;
+	uint8_t numReg;
+	string regName = "";
+	string srcName = "";
+	uint8_t buf[16];
+	int8_t data;
+
+	if (!ix && !iy) {
+		mRes = memory->getByte(pc++, &code);
+		if (mRes) return "";
+		numReg = code & 0x07;
+
+		regName = getRegNameFromNumRegs(numReg);
+
+
+	}
+	else {
+		mRes = memory->getByte(pc++, (uint8_t*)&data);
+		if (mRes) return "";
+		mRes = memory->getByte(pc++, &code);
+		if (mRes) return "";
+		numReg = code & 0x07;
+		if (numReg != 6) {
+			if (ix) srcName = "(IX+0x" + decToHexByte(data) + "),"; else {
+				if (iy) srcName = "(IY+0x" + decToHexByte(data) + "),";
+			}
+			regName = getRegNameFromNumRegs(numReg);
+		}
+		else {
+			if (ix) srcName = "(IX+0x" + decToHexByte(data) + ")"; else {
+				if (iy) srcName = "(IY+0x" + decToHexByte(data) + ")";
+			}
+			regName = "";
+		}
+	}
+
+	code >>= 3;
+	
+	switch (code) {
+	case 0x00: // rlc
+		s = "RLC " + srcName + regName;
+		break;
+	case 0x01: // rrc
+		s = "RRC " + srcName + regName;
+		break;
+	case 0x02: // rl
+		s = "RL " + srcName + regName;
+		break;
+	case 0x03: // rr
+		s = "RR " + srcName + regName;
+		break;
+	case 0x04: // sla
+		s = "SLA " + srcName + regName;
+		break;
+	case 0x05: // sra
+		s = "SRA " + srcName + regName;
+		break;
+	case 0x06: // sll
+		s = "SLL " + srcName + regName;
+		break;
+	case 0x07: // srl
+		s = "SRL " + srcName + regName;
+		break;
+	case 0x08:
+	case 0x09:
+	case 0x0a:
+	case 0x0b:
+	case 0x0c:
+	case 0x0d:
+	case 0x0e:
+	case 0x0f: // bit
+		{
+			sprintf_s((char*)buf, 16, "%d\0", code - 8);
+			std::string btNum((char*)buf);
+			if (ix || iy) {
+				if (ix) srcName = "(IX+0x" + decToHexByte(data) + ")"; else {
+					if (iy) srcName = "(IY+0x" + decToHexByte(data) + ")";
+				}
+				s = "SRL " + btNum + "," + srcName;
+			}
+			else {
+				s = "SRL " + btNum + "," + regName;
+			}
+		}
+		break;
+	case 0x10:
+	case 0x11:
+	case 0x12:
+	case 0x13:
+	case 0x14:
+	case 0x15:
+	case 0x16:
+	case 0x17: // res
+		{
+			sprintf_s((char*)buf, 16, "%d\0", code - 8);
+			std::string btNum((char*)buf);
+			s = "RES " + btNum + "," + srcName + regName;
+		}
+		break;
+	case 0x18:
+	case 0x19:
+	case 0x1a:
+	case 0x1b:
+	case 0x1c:
+	case 0x1d:
+	case 0x1e:
+	case 0x1f: // set
+		{
+			sprintf_s((char*)buf, 16, "%d\0", code - 8);
+			std::string btNum((char*)buf);
+			s = "SET " + btNum + "," + srcName + regName;
+		}
+		break;
+	}
 
 	return s;
 }
@@ -2409,7 +2783,7 @@ string z80::dasm(uint16_t* addr)
 		s = s + "JP Z," + decToHexWord(w1);
 		break;
 	case 0xCB: // bit ops
-		s = s + bitOpsDasm(addr);
+		s = s + bitOpsDasm(addr, false, false);
 		break;
 	case 0xCC: //{ call z, addr }
 		mRes = memory->getWord(*addr, &w1);

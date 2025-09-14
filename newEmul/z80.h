@@ -57,17 +57,20 @@ private:
 	Ports* prt[65536];
 
 	void setfl(bool h);
+	void setfl(uint8_t data, bool c, bool h, bool n);
 	void summ(uint8_t sl, uint8_t ppp, uint8_t typ);
 	uint8_t inrdcr(uint8_t sl, uint8_t typ);
 	std::string getParam(std::string s, int* n);
 	uint8_t GetIdRegsToName(std::string n);
 	uint8_t GetIdRegsPairToName(std::string n);
 	uint16_t add16(uint16_t a, uint16_t b);
-	uint8_t bitOps();
+	uint8_t bitOps(bool ix, bool iy);
 	uint8_t miscOps();
 	uint8_t ixOps();
 	uint8_t iyOps();
-	std::string bitOpsDasm(uint16_t* addr);
+	bool getRegDataFromNumRegs(uint8_t numReg, uint8_t* regData);
+	bool setRegDataOfNumRegs(uint8_t numReg, uint8_t regData);
+	std::string bitOpsDasm(uint16_t* addr, bool ix, bool iy);
 	std::string miscOpsDasm(uint16_t* addr);
 	std::string ixOpsDasm(uint16_t* addr);
 	std::string iyOpsDasm(uint16_t* addr);
