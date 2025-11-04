@@ -47,6 +47,8 @@ private:
 	z80reg16 ir;
 	uint16_t ix;
 	uint16_t iy;
+	bool IFF1, IFF2;
+	uint8_t interruptMode;
 	z80reg16 af[2];
 	z80reg blockRegs[2];
 	uint8_t currentBlock;
@@ -55,10 +57,13 @@ private:
 	Memory* memory;
 	uint64_t TickCount;
 	Ports* prt[65536];
+	bool loopMode;
+	uint8_t loopCommand;
 
 	void setfl(bool h);
 	void setfl(uint8_t data, bool c, bool h, bool n);
 	void summ(uint8_t sl, uint8_t ppp, uint8_t typ);
+	void summ16(uint16_t rg, uint16_t ppp, uint8_t typ);
 	uint8_t inrdcr(uint8_t sl, uint8_t typ);
 	std::string getParam(std::string s, int* n);
 	uint8_t GetIdRegsToName(std::string n);

@@ -16,6 +16,9 @@ using namespace std;
 #define BC blockRegs[currentBlock].bc.r16
 #define DE blockRegs[currentBlock].de.r16
 #define HL blockRegs[currentBlock].hl.r16
+#define I ir.r8.hi
+#define R ir.r8.lo
+
 
 #define fC 0
 #define fN 1
@@ -305,6 +308,35 @@ void z80::summ(uint8_t sl, uint8_t ppp, uint8_t typ)
 	if ((temp & 0x0100) != 0) SET(fC); else CLEAR(fC);
 }
 
+void z80::summ16(uint16_t rg, uint16_t ppp, uint8_t typ)
+{
+	uint16_t temp = 0;
+	uint8_t iAC = 0;
+	F = H & (F3f | F5f);
+
+	if (typ)
+	{
+		temp = HL - rg - ppp;
+		iAC = (((A & 0x08) >> 1) | ((rg & 0x08) >> 2) | ((temp & 0x08) >> 3)) & 0x07;
+		if (subACtable[iAC] == 1) CLEAR(fH); else SET(fH);
+		SET(fN);
+	}
+	else
+	{
+		temp = A + rg + ppp;
+		iAC = (((A & 0x08) >> 1) | ((rg & 0x08) >> 2) | ((temp & 0x08) >> 3)) & 0x07;
+		if (addACtable[iAC] == 1) SET(fH); else CLEAR(fH);
+		CLEAR(fN);
+	}
+
+	HL = (uint16_t)temp;
+
+	if (A == 0) SET(fZ); else CLEAR(fZ);
+	if ((A & 0x80) != 0) SET(fS); else CLEAR(fS);
+	if (pTable[A] == 1) SET(fPV); else CLEAR(fPV);
+	if ((temp & 0x0100) != 0) SET(fC); else CLEAR(fC);
+}
+
 
 uint8_t z80::inrdcr(uint8_t sl, uint8_t typ)
 {
@@ -564,7 +596,487 @@ uint8_t z80::bitOps(bool ix, bool iy) {
 	return NumTicks;
 }
 uint8_t z80::miscOps() {
-	return 0;
+	uint8_t NumTicks = 0;
+	uint8_t code;
+	bool mRes = false;
+	uint16_t addr;
+	uint8_t temp;
+	uint8_t temp1;
+	uint8_t temp2;
+	uint16_t portAddr;
+	
+	mRes = memory->getByte(pc++, &code);
+	if (mRes) return NumTicks;
+	
+	switch (code)
+	{
+	case 0x40: //in b,(c)
+		portAddr = BC;
+		B = ports_in[portAddr];
+		if (prt[portAddr] != NULL) B = prt[portAddr]->getPortData(portAddr);
+		setfl(B, false, false, false);
+		NumTicks = 12;
+		break;
+	case 0x41: //out (c), b
+		portAddr =BC;
+		ports_out[portAddr] = B;
+		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, B);
+		NumTicks = 12;
+		break;
+	case 0x42: //sbc hl, bc
+		summ16(BC, F & 0x01, 1);
+		NumTicks = 15;
+		break;
+	case 0x43: //ld (addr), bc
+		mRes = memory->getWord(pc, &addr);
+		pc += 2;
+		mRes = memory->setWord(addr, BC);
+		NumTicks = 20;
+	case 0x44: //neg
+		temp = A;
+		A = 0;
+		summ(temp, 0, 1);
+		NumTicks = 8;
+		break;
+	case 0x45: //retn
+		mRes = memory->getWordFromStack(sp, &pc);
+		sp += 2;
+		IFF1 = IFF2;
+		NumTicks = 14;
+		break;
+	case 0x46: //im 0
+		interruptMode = 0;
+		NumTicks = 8;
+		break;
+	case 0x47: //ld i, a
+		I = A;
+		NumTicks = 9;
+		break;
+	case 0x48: //in c,(c)
+		portAddr = BC;
+		C = ports_in[portAddr];
+		if (prt[portAddr] != NULL) C = prt[portAddr]->getPortData(portAddr);
+		setfl(C, false, false, false);
+		NumTicks = 12;
+		break;
+	case 0x49: //out (c), c
+		portAddr = BC;
+		ports_out[portAddr] = C;
+		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, C);
+		NumTicks = 12;
+		break;
+	case 0x4A: //adc hl, bc
+		summ16(BC, F & 0x01, 0);
+		NumTicks = 15;
+		break;
+	case 0x4B: //ld bc,(addr)
+		mRes = memory->getWord(pc, &addr);
+		pc += 2;
+		mRes = memory->getWord(addr, &BC);
+		NumTicks = 20;
+		break;
+	case 0x4D: //reti
+		mRes = memory->getWordFromStack(sp, &pc);
+		sp += 2;
+		NumTicks = 14;
+		break;
+	case 0x4f: //ld r, a
+		R = A;
+		NumTicks = 9;
+		break;
+	case 0x50: //in d,(c)
+		portAddr = BC;
+		D = ports_in[portAddr];
+		if (prt[portAddr] != NULL) D = prt[portAddr]->getPortData(portAddr);
+		setfl(D, false, false, false);
+		NumTicks = 12;
+		break;
+	case 0x51: //out (c), d
+		portAddr = BC;
+		ports_out[portAddr] = D;
+		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, D);
+		NumTicks = 12;
+		break;
+	case 0x52: //sbc hl, de
+		summ16(DE, F & 0x01, 1);
+		NumTicks = 15;
+		break;
+	case 0x53: //ld (addr), de
+		mRes = memory->getWord(pc, &addr);
+		pc += 2;
+		mRes = memory->setWord(addr, DE);
+		NumTicks = 20;
+	case 0x56: //im 1
+		interruptMode = 1;
+		NumTicks = 8;
+		break;
+	case 0x57: //ld a, i
+		A = I;
+		NumTicks = 9;
+		break;
+	case 0x58: //in e,(c)
+		portAddr = BC;
+		E = ports_in[portAddr];
+		if (prt[portAddr] != NULL) E = prt[portAddr]->getPortData(portAddr);
+		setfl(E, false, false, false);
+		NumTicks = 12;
+		break;
+	case 0x59: //out (c), e
+		portAddr = BC;
+		ports_out[portAddr] = E;
+		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, E);
+		NumTicks = 12;
+		break;
+	case 0x5A: //adc hl, de
+		summ16(DE, F & 0x01, 0);
+		NumTicks = 15;
+		break;
+	case 0x5B: //ld de,(addr)
+		mRes = memory->getWord(pc, &addr);
+		pc += 2;
+		mRes = memory->getWord(addr, &DE);
+		NumTicks = 20;
+		break;
+	case 0x5e: //im 2
+		interruptMode = 2;
+		NumTicks = 8;
+		break;
+	case 0x5f: //ld a, r
+		A = R;
+		NumTicks = 9;
+		break;
+	case 0x60: //in h,(c)
+		portAddr = BC;
+		H = ports_in[portAddr];
+		if (prt[portAddr] != NULL) H = prt[portAddr]->getPortData(portAddr);
+		setfl(H, false, false, false);
+		NumTicks = 12;
+		break;
+	case 0x61: //out (c), h
+		portAddr = BC;
+		ports_out[portAddr] = H;
+		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, H);
+		NumTicks = 12;
+		break;
+	case 0x62: //sbc hl, hl
+		summ16(HL, F & 0x01, 1);
+		NumTicks = 15;
+		break;
+	case 0x63: //ld (addr), hl
+		mRes = memory->getWord(pc, &addr);
+		pc += 2;
+		mRes = memory->setWord(addr, HL);
+		NumTicks = 20;
+	case 0x67: //rrd
+		mRes = memory->getByte(HL, &temp);
+		temp1 = (A & 0x0F) << 4;
+		temp2 = temp & 0x0F;
+		temp >>= 4;
+		temp = temp | temp1;
+		A = (A & 0xF0) | temp2;
+		mRes = memory->setByte(HL, temp);
+		NumTicks = 18;
+		break;
+	case 0x68: //in l,(c)
+		portAddr = BC;
+		L = ports_in[portAddr];
+		if (prt[portAddr] != NULL) L = prt[portAddr]->getPortData(portAddr);
+		setfl(L, false, false, false);
+		NumTicks = 12;
+		break;
+	case 0x69: //out (c), l
+		portAddr = BC;
+		ports_out[portAddr] = L;
+		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, L);
+		NumTicks = 12;
+		break;
+	case 0x6A: //adc hl, hl
+		summ16(HL, F & 0x01, 0);
+		NumTicks = 15;
+		break;
+	case 0x6B: //ld hl,(addr)
+		mRes = memory->getWord(pc, &addr);
+		pc += 2;
+		mRes = memory->getWord(addr, &HL);
+		NumTicks = 20;
+		break;
+	case 0x6f: //rld
+		mRes = memory->getByte(HL, &temp);
+		temp1 = (A & 0x0F);
+		temp2 = (temp & 0xF0) >> 4;
+		temp <<= 4;
+		temp = temp | temp1;
+		A = (A & 0xF0) | temp2;
+		mRes = memory->setByte(HL, temp);
+		NumTicks = 18;
+		break;
+	case 0x70: //in (c) n/d
+		portAddr = BC;
+		temp = ports_in[portAddr];
+		if (prt[portAddr] != NULL) temp = prt[portAddr]->getPortData(portAddr);
+		setfl(temp, false, false, false);
+		NumTicks = 12;
+		break;
+	case 0x71: //out (c), 0 n/d
+		portAddr = BC;
+		ports_out[portAddr] = 0;
+		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, 0);
+		NumTicks = 12;
+		break;
+	case 0x72: //sbc hl, sp
+		summ16(sp, F & 0x01, 1);
+		NumTicks = 15;
+		break;
+	case 0x73: //ld (addr), sp
+		mRes = memory->getWord(pc, &addr);
+		pc += 2;
+		mRes = memory->setWord(addr, sp);
+		NumTicks = 20;
+		break;
+	case 0x78: //in a,(c)
+		portAddr = BC;
+		A = ports_in[portAddr];
+		if (prt[portAddr] != NULL) A = prt[portAddr]->getPortData(portAddr);
+		setfl(A, false, false, false);
+		NumTicks = 12;
+		break;
+	case 0x79: //out (c), a
+		portAddr = BC;
+		ports_out[portAddr] = A;
+		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, A);
+		NumTicks = 12;
+		break;
+	case 0x7A: //adc hl, sp
+		summ16(sp, F & 0x01, 0);
+		NumTicks = 15;
+		break;
+	case 0x7B: //ld sp,(addr)
+		mRes = memory->getWord(pc, &addr);
+		pc += 2;
+		mRes = memory->getWord(addr, &sp);
+		NumTicks = 20;
+		break;
+	case 0xA0: //ldi
+		mRes = memory->getByte(HL, &temp);
+		mRes = memory->setByte(DE, temp);
+		DE++;
+		HL++;
+		BC--;
+		CLEAR(fN);
+		CLEAR(fH);
+		if (BC) SET(fPV); else CLEAR(fPV);
+		NumTicks = 16;
+		break;
+	case 0xA1: //cpi
+		mRes = memory->getByte(HL, &temp);
+		temp1 = A;
+		summ(C, 0, 1);
+		A = temp1;
+		HL++;
+		BC--;
+		if (BC) SET(fPV); else CLEAR(fPV);
+		NumTicks = 16;
+		break;
+	case 0xA2: //ini
+		portAddr = BC;
+		temp = ports_in[portAddr];
+		if (prt[portAddr] != NULL) temp = prt[portAddr]->getPortData(portAddr);
+		mRes = memory->setByte(HL, temp);
+		HL++;
+		B--;
+		setfl(A, false, false, false);
+		NumTicks = 16;
+		break;
+	case 0xA3: //outi
+		mRes = memory->getByte(HL, &temp);
+		portAddr = BC;
+		ports_out[portAddr] = temp;
+		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, temp);
+		HL++;
+		B--;
+		setfl(A, false, false, false);
+		NumTicks = 16;
+		break;
+	case 0xA8: //ldd
+		mRes = memory->getByte(HL, &temp);
+		mRes = memory->setByte(DE, temp);
+		DE--;
+		HL--;
+		BC--;
+		CLEAR(fN);
+		CLEAR(fH);
+		if (BC) SET(fPV); else CLEAR(fPV);
+		NumTicks = 16;
+		break;
+	case 0xA9: //cpd
+		mRes = memory->getByte(HL, &temp);
+		temp1 = A;
+		summ(C, 0, 1);
+		A = temp1;
+		HL--;
+		BC--;
+		if (BC) SET(fPV); else CLEAR(fPV);
+		NumTicks = 16;
+		break;
+	case 0xAA: //ind
+		portAddr = BC;
+		temp = ports_in[portAddr];
+		if (prt[portAddr] != NULL) temp = prt[portAddr]->getPortData(portAddr);
+		mRes = memory->setByte(HL, temp);
+		HL--;
+		B--;
+		setfl(A, false, false, false);
+		NumTicks = 16;
+		break;
+	case 0xAB: //outd
+		mRes = memory->getByte(HL, &temp);
+		portAddr = BC;
+		ports_out[portAddr] = temp;
+		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, temp);
+		HL--;
+		B--;
+		setfl(A, false, false, false);
+		NumTicks = 16;
+		break;
+	case 0xB0: //ldir
+		mRes = memory->getByte(HL, &temp);
+		mRes = memory->setByte(DE, temp);
+		DE++;
+		HL++;
+		BC--;
+		CLEAR(fN);
+		CLEAR(fH);
+		if (BC) {
+			SET(fPV);
+			NumTicks = 21;
+			pc -= 2;
+		}
+		else {
+			CLEAR(fPV);
+			NumTicks = 16;
+		}
+		break;
+	case 0xB1: //cpir
+		mRes = memory->getByte(HL, &temp);
+		temp1 = A;
+		summ(C, 0, 1);
+		A = temp1;
+		HL++;
+		BC--;
+		if (BC) {
+			SET(fPV);
+			NumTicks = 21;
+			pc -= 2;
+		}
+		else {
+			CLEAR(fPV);
+			NumTicks = 16;
+		}
+		break;
+	case 0xB2: //inir
+		portAddr = BC;
+		temp = ports_in[portAddr];
+		if (prt[portAddr] != NULL) temp = prt[portAddr]->getPortData(portAddr);
+		mRes = memory->setByte(HL, temp);
+		HL++;
+		B--;
+		setfl(A, false, false, false);
+		if (BC) {
+			NumTicks = 21;
+			pc -= 2;
+		}
+		else {
+			NumTicks = 16;
+		}
+		break;
+	case 0xB3: //outir
+		mRes = memory->getByte(HL, &temp);
+		portAddr = BC;
+		ports_out[portAddr] = temp;
+		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, temp);
+		HL++;
+		B--;
+		setfl(A, false, false, false);
+		if (BC) {
+			NumTicks = 21;
+			pc -= 2;
+		}
+		else {
+			NumTicks = 16;
+		}
+		break;
+	case 0xB8: //lddr
+		mRes = memory->getByte(HL, &temp);
+		mRes = memory->setByte(DE, temp);
+		DE--;
+		HL--;
+		BC--;
+		CLEAR(fN);
+		CLEAR(fH);
+		if (BC) {
+			SET(fPV);
+			NumTicks = 21;
+			pc -= 2;
+		}
+		else {
+			CLEAR(fPV);
+			NumTicks = 16;
+		}
+		break;
+	case 0xB9: //cpdr
+		mRes = memory->getByte(HL, &temp);
+		temp1 = A;
+		summ(C, 0, 1);
+		A = temp1;
+		HL--;
+		BC--;
+		if (BC) {
+			SET(fPV);
+			NumTicks = 21;
+			pc -= 2;
+		}
+		else {
+			CLEAR(fPV);
+			NumTicks = 16;
+		}
+		break;
+	case 0xBA: //indr
+		portAddr = BC;
+		temp = ports_in[portAddr];
+		if (prt[portAddr] != NULL) temp = prt[portAddr]->getPortData(portAddr);
+		mRes = memory->setByte(HL, temp);
+		HL--;
+		B--;
+		setfl(A, false, false, false);
+		if (BC) {
+			NumTicks = 21;
+			pc -= 2;
+		}
+		else {
+			NumTicks = 16;
+		}
+		break;
+	case 0xBB: //outdr
+		mRes = memory->getByte(HL, &temp);
+		portAddr = BC;
+		ports_out[portAddr] = temp;
+		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, temp);
+		HL--;
+		B--;
+		setfl(A, false, false, false);
+		if (BC) {
+			NumTicks = 21;
+			pc -= 2;
+		}
+		else {
+			NumTicks = 16;
+		}
+		break;
+	default:
+		NumTicks = 8;
+	}
+
+	return NumTicks;
 }
 
 uint8_t z80::ixOps() {
@@ -2088,6 +2600,216 @@ std::string z80::bitOpsDasm(uint16_t* addr, bool ix, bool iy) {
 
 std::string z80::miscOpsDasm(uint16_t* addr) {
 	string s = "";
+	uint8_t code;
+	bool mRes = false;
+	uint8_t b1;
+	uint16_t a1;
+
+	mRes = memory->getByte(*addr, &code);
+	if (mRes) {
+		return s;
+	}
+	(*addr)++;
+
+	switch (code)
+	{
+	case 0x40:			//{ in b,(c) }
+		s = s + "IN B,(C)";
+		break;
+	case 0x41:			//{ out (c),b }
+		s = s + "OUT (C),B";
+		break;
+	case 0x42:			//{ sbc hl,bc }
+		s = s + "SBC HL,BC";
+		break;
+	case 0x43:			//{ ld (addr),bc }
+		mRes = memory->getWord(*addr, &a1);
+		*addr += 2;
+		s = s + "LD (" + decToHexWord(a1) + "),BC";
+		break;
+	case 0x44:			//{ neg }
+		s = s + "NEG";
+		break;
+	case 0x45:			//{ retn }
+		s = s + "RETN";
+		break;
+	case 0x46:			//{ im 0 }
+		s = s + "IM 0";
+		break;
+	case 0x47:			//{ ld i,a }
+		s = s + "LD I,A";
+		break;
+	case 0x48:			//{ in c,(c) }
+		s = s + "IN C,(C)";
+		break;
+	case 0x49:			//{ out (c),c }
+		s = s + "OUT (C),C";
+		break;
+	case 0x4A:			//{ adc hl,bc }
+		s = s + "ADC HL,BC";
+		break;
+	case 0x4B:			//{ ld bc,(addr) }
+		mRes = memory->getWord(*addr, &a1);
+		*addr += 2;
+		s = s + "LD BC,(" + decToHexWord(a1) + ")";
+		break;
+	case 0x4D:			//{ reti }
+		s = s + "RETI";
+		break;
+	case 0x4F:			//{ ld r,a }
+		s = s + "LD R,A";
+		break;
+	case 0x50:			//{ in d,(c) }
+		s = s + "IN D,(C)";
+		break;
+	case 0x51:			//{ out (c),d }
+		s = s + "OUT (C),D";
+		break;
+	case 0x52:			//{ sbc hl,de }
+		s = s + "SBC HL,DE";
+		break;
+	case 0x53:			//{ ld (addr),de }
+		mRes = memory->getWord(*addr, &a1);
+		*addr += 2;
+		s = s + "LD (" + decToHexWord(a1) + "),DE";
+		break;
+	case 0x56:			//{ im 1 }
+		s = s + "IM 1";
+		break;
+	case 0x57:			//{ ld a,i }
+		s = s + "LD A,I";
+		break;
+	case 0x58:			//{ in e,(c) }
+		s = s + "IN E,(C)";
+		break;
+	case 0x59:			//{ out (c),e }
+		s = s + "OUT (C),E";
+		break;
+	case 0x5A:			//{ adc hl,de }
+		s = s + "ADC HL,DE";
+		break;
+	case 0x5B:			//{ ld de,(addr) }
+		mRes = memory->getWord(*addr, &a1);
+		*addr += 2;
+		s = s + "LD DE,(" + decToHexWord(a1) + ")";
+		break;
+	case 0x5E:			//{ im 2 }
+		s = s + "IM 2";
+		break;
+	case 0x5F:			//{ ld a,r }
+		s = s + "LD A,R";
+		break;
+	case 0x60:			//{ in h,(c) }
+		s = s + "IN H,(C)";
+		break;
+	case 0x61:			//{ out (c),h }
+		s = s + "OUT (C),H";
+		break;
+	case 0x62:			//{ sbc hl,hl }
+		s = s + "SBC HL,HL";
+		break;
+	case 0x63:			//{ ld (addr),hl }
+		mRes = memory->getWord(*addr, &a1);
+		*addr += 2;
+		s = s + "LD (" + decToHexWord(a1) + "),HL";
+		break;
+	case 0x67:			//{ rrd }
+		s = s + "RRD";
+		break;
+	case 0x68:			//{ in l,(c) }
+		s = s + "IN L,(C)";
+		break;
+	case 0x69:			//{ out (c),l }
+		s = s + "OUT (C),L";
+		break;
+	case 0x6A:			//{ adc hl,hl }
+		s = s + "ADC HL,HL";
+		break;
+	case 0x6B:			//{ ld hl,(addr) }
+		mRes = memory->getWord(*addr, &a1);
+		*addr += 2;
+		s = s + "LD HL,(" + decToHexWord(a1) + ")";
+		break;
+	case 0x6F:			//{ rld }
+		s = s + "RLD";
+		break;
+	case 0x70:			//{ in (c) }
+		s = s + "IN (C)";
+		break;
+	case 0x71:			//{ out (c),0 }
+		s = s + "OUT (C),0";
+		break;
+	case 0x72:			//{ sbc hl,sp }
+		s = s + "SBC HL,SP";
+		break;
+	case 0x73:			//{ ld (addr),sp }
+		mRes = memory->getWord(*addr, &a1);
+		*addr += 2;
+		s = s + "LD (" + decToHexWord(a1) + "),SP";
+		break;
+	case 0x78:			//{ in a,(c) }
+		s = s + "IN A,(C)";
+		break;
+	case 0x79:			//{ out (c),a }
+		s = s + "OUT (C),A";
+		break;
+	case 0x7A:			//{ adc hl,sp }
+		s = s + "ADC HL,SP";
+		break;
+	case 0x7B:			//{ ld sp,(addr) }
+		mRes = memory->getWord(*addr, &a1);
+		*addr += 2;
+		s = s + "LD SP,(" + decToHexWord(a1) + ")";
+		break;
+	case 0xA0:			//{ ldi }
+		s = s + "LDI";
+		break;
+	case 0xA1:			//{ cpi }
+		s = s + "CPI";
+		break;
+	case 0xA2:			//{ ini }
+		s = s + "INI";
+		break;
+	case 0xA3:			//{ outi }
+		s = s + "OUTI";
+		break;
+	case 0xA8:			//{ ldd }
+		s = s + "LDD";
+		break;
+	case 0xA9:			//{ cpd }
+		s = s + "CPD";
+		break;
+	case 0xAA:			//{ ind }
+		s = s + "IND";
+		break;
+	case 0xAB:			//{ outd }
+		s = s + "OUTD";
+		break;
+	case 0xB0:			//{ ldir }
+		s = s + "LDIR";
+		break;
+	case 0xB1:			//{ cpir }
+		s = s + "CPIR";
+		break;
+	case 0xB2:			//{ inir }
+		s = s + "INIR";
+		break;
+	case 0xB3:			//{ outir }
+		s = s + "OUTIR";
+		break;
+	case 0xB8:			//{ lddr}
+		s = s + "LDDR";
+		break;
+	case 0xB9:			//{ cpdr }
+		s = s + "CPDR";
+		break;
+	case 0xBA:			//{ indr }
+		s = s + "INDR";
+		break;
+	case 0xBB:			//{ outdr }
+		s = s + "OUTDR";
+		break;
+	}
 
 	return s;
 }
