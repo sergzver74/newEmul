@@ -45,7 +45,7 @@ private:
 	bool INTE, HLT, INTREQ;
 	Memory *memory;
 	uint64_t TickCount;
-	Ports* prt[255];
+	Ports* prt[256];
 
 	void setfl();
 	void summ(uint8_t sl, uint8_t ppp, uint8_t typ);

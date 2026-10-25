@@ -44,9 +44,9 @@ private:
 	uint8_t ports_out[65536];
 	uint16_t pc;
 	uint16_t sp;
-	z80reg16 ir;
-	uint16_t ix;
-	uint16_t iy;
+	z80reg16 IR;
+	z80reg16 IX;
+	z80reg16 IY;
 	bool IFF1, IFF2;
 	uint8_t interruptMode;
 	z80reg16 af[2];
@@ -65,20 +65,21 @@ private:
 	void summ(uint8_t sl, uint8_t ppp, uint8_t typ);
 	void summ16(uint16_t rg, uint16_t ppp, uint8_t typ);
 	uint8_t inrdcr(uint8_t sl, uint8_t typ);
-	std::string getParam(std::string s, int* n);
-	uint8_t GetIdRegsToName(std::string n);
-	uint8_t GetIdRegsPairToName(std::string n);
 	uint16_t add16(uint16_t a, uint16_t b);
 	uint8_t bitOps(bool ix, bool iy);
 	uint8_t miscOps();
-	uint8_t ixOps();
-	uint8_t iyOps();
+	uint8_t ixiyOps(bool isIX, bool isIY);
 	bool getRegDataFromNumRegs(uint8_t numReg, uint8_t* regData);
 	bool setRegDataOfNumRegs(uint8_t numReg, uint8_t regData);
 	std::string bitOpsDasm(uint16_t* addr, bool ix, bool iy);
 	std::string miscOpsDasm(uint16_t* addr);
-	std::string ixOpsDasm(uint16_t* addr);
-	std::string iyOpsDasm(uint16_t* addr);
+	std::string ixiyOpsDasm(uint16_t* addr, bool isIX, bool isIY);
+	string delSpace(string data);
+	string getData(string data, int n);
+	int getParamIndex(string data);
+	int getHexData(string data);
+	int getIndexData(string data);
+	int getMemoryData(string data);
 
 	int pTable[256] = {
 	1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1,

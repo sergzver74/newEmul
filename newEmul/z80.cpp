@@ -16,8 +16,8 @@ using namespace std;
 #define BC blockRegs[currentBlock].bc.r16
 #define DE blockRegs[currentBlock].de.r16
 #define HL blockRegs[currentBlock].hl.r16
-#define I ir.r8.hi
-#define R ir.r8.lo
+#define I IR.r8.hi
+#define R IR.r8.lo
 
 
 #define fC 0
@@ -38,9 +38,9 @@ using namespace std;
 #define Zf	64
 #define Sf	128
 
-#define SET(n) (F | (1 << n))
-#define CLEAR(n) (F & (!(1 << n)))
-#define FLAG(n) ((F & (1 << n)) >> n)
+#define SET(n) (F |= (1 << (n)))
+#define CLEAR(n) (F &= ~(1 << (n)))
+#define FLAG(n) ((F >> (n)) & 1)
 
 
 z80::z80(Memory* mem) {
@@ -58,9 +58,12 @@ z80::z80(Memory* mem) {
 	INTREQ = false;
 	pc = 0;
 	sp = 0;
-	ir.r16 = 0;
-	ix = 0;
-	iy = 0;
+	IR.r16 = 0;
+	IX.r16 = 0;
+	IY.r16 = 0;
+	IFF1 = false;
+	IFF2 = false;
+	interruptMode = 0;
 	af[0].r16 = 0x02;
 	blockRegs[0].bc.r16 = 0;
 	blockRegs[0].de.r16 = 0;
@@ -148,14 +151,14 @@ Registers z80::getRegisters() {
 	reg.registers[reg.count].data = (uint32_t)blockRegs[1].hl.r16;
 	reg.registers[reg.count++].strData = decToHexWord(blockRegs[1].hl.r16);
 	reg.registers[reg.count].name = "IR";
-	reg.registers[reg.count].data = (uint32_t)ir.r16;
-	reg.registers[reg.count++].strData = decToHexWord(ir.r16);
+	reg.registers[reg.count].data = (uint32_t)IR.r16;
+	reg.registers[reg.count++].strData = decToHexWord(IR.r16);
 	reg.registers[reg.count].name = "IX";
-	reg.registers[reg.count].data = (uint32_t)ix;
-	reg.registers[reg.count++].strData = decToHexWord(ix);
+	reg.registers[reg.count].data = (uint32_t)IX.r16;
+	reg.registers[reg.count++].strData = decToHexWord(IX.r16);
 	reg.registers[reg.count].name = "IY";
-	reg.registers[reg.count].data = (uint32_t)iy;
-	reg.registers[reg.count++].strData = decToHexWord(iy);
+	reg.registers[reg.count].data = (uint32_t)IY.r16;
+	reg.registers[reg.count++].strData = decToHexWord(IY.r16);
 	reg.registers[reg.count].name = "SP";
 	reg.registers[reg.count].data = (uint32_t)sp;
 	reg.registers[reg.count++].strData = decToHexWord(sp);
@@ -220,11 +223,14 @@ void z80::reset() {
 	INTREQ = false;
 	pc = 0;
 	sp = 0;
-	ir.r16 = 0;
-	ix = 0;
-	iy = 0;
+	IR.r16 = 0;
+	IX.r16 = 0;
+	IY.r16 = 0;
 	currentBlock = 0;
 	currentAF = 0;
+	IFF1 = false;
+	IFF2 = false;
+	interruptMode = 0;
 	for (int i = 0; i < 2; i++) {
 		af[i].r16 = 0;
 		blockRegs[i].bc.r16 = 0;
@@ -274,11 +280,11 @@ void z80::setfl(uint8_t data, bool c, bool h, bool n)
 	if (data > 127) SET(fS); else CLEAR(fS);
 	if ((k & 0x01) == 0) SET(fPV); else CLEAR(fPV);
 	if (h) SET(fH); else CLEAR(fH);
-	if (h) SET(fC); else CLEAR(fC);
-	if (h) SET(fN); else CLEAR(fN);
+	if (c) SET(fC); else CLEAR(fC);
+	if (n) SET(fN); else CLEAR(fN);
 }
 
-
+/*
 void z80::summ(uint8_t sl, uint8_t ppp, uint8_t typ)
 {
 	uint16_t temp = 0;
@@ -310,31 +316,32 @@ void z80::summ(uint8_t sl, uint8_t ppp, uint8_t typ)
 
 void z80::summ16(uint16_t rg, uint16_t ppp, uint8_t typ)
 {
-	uint16_t temp = 0;
+	uint32_t temp = 0;
 	uint8_t iAC = 0;
-	F = H & (F3f | F5f);
 
 	if (typ)
 	{
 		temp = HL - rg - ppp;
-		iAC = (((A & 0x08) >> 1) | ((rg & 0x08) >> 2) | ((temp & 0x08) >> 3)) & 0x07;
+		F = temp & (F3f | F5f);
+		iAC = (((H & 0x08) >> 1) | ((rg & 0x08) >> 2) | ((temp & 0x08) >> 3)) & 0x07;
 		if (subACtable[iAC] == 1) CLEAR(fH); else SET(fH);
 		SET(fN);
 	}
 	else
 	{
-		temp = A + rg + ppp;
-		iAC = (((A & 0x08) >> 1) | ((rg & 0x08) >> 2) | ((temp & 0x08) >> 3)) & 0x07;
+		temp = HL + rg + ppp;
+		F = temp & (F3f | F5f);
+		iAC = (((H & 0x08) >> 1) | ((rg & 0x08) >> 2) | ((temp & 0x08) >> 3)) & 0x07;
 		if (addACtable[iAC] == 1) SET(fH); else CLEAR(fH);
 		CLEAR(fN);
 	}
 
 	HL = (uint16_t)temp;
 
-	if (A == 0) SET(fZ); else CLEAR(fZ);
-	if ((A & 0x80) != 0) SET(fS); else CLEAR(fS);
-	if (pTable[A] == 1) SET(fPV); else CLEAR(fPV);
-	if ((temp & 0x0100) != 0) SET(fC); else CLEAR(fC);
+	if (H == 0) SET(fZ); else CLEAR(fZ);
+	if ((H & 0x80) != 0) SET(fS); else CLEAR(fS);
+	if (pTable[H] == 1) SET(fPV); else CLEAR(fPV);
+	if ((temp & 0x010000) != 0) SET(fC); else CLEAR(fC);
 }
 
 
@@ -355,6 +362,85 @@ uint8_t z80::inrdcr(uint8_t sl, uint8_t typ)
 	if (sl == 0) SET(fZ); else CLEAR(fZ);
 	if ((sl & 0x80) != 0) SET(fS); else CLEAR(fS);
 	if (pTable[sl] == 1) SET(fPV); else CLEAR(fPV);
+	return sl;
+}
+*/
+
+void z80::summ(uint8_t sl, uint8_t ppp, uint8_t typ)
+{
+	uint16_t temp = 0;
+	uint8_t oldA = A;
+	F = 0;
+
+	if (typ)
+	{
+		temp = A - sl - ppp;
+		if (((oldA & 0x0F) - (sl & 0x0F) - ppp) & 0x10) SET(fH);
+		if (((oldA ^ sl) & (oldA ^ temp) & 0x80) != 0) SET(fPV);
+		SET(fN);
+	}
+	else
+	{
+		temp = A + sl + ppp;
+		if (((oldA & 0x0F) + (sl & 0x0F) + ppp) & 0x10) SET(fH);
+		if ((~(oldA ^ sl) & (oldA ^ temp) & 0x80) != 0) SET(fPV);
+	}
+
+	A = (uint8_t)temp;
+	F |= A & (F3f | F5f);
+
+	if (A == 0) SET(fZ);
+	if ((A & 0x80) != 0) SET(fS);
+	if ((temp & 0x0100) != 0) SET(fC);
+}
+
+void z80::summ16(uint16_t rg, uint16_t ppp, uint8_t typ)
+{
+	uint32_t temp = 0;
+	uint16_t oldHL = HL;
+	F = 0;
+
+	if (typ)
+	{
+		temp = oldHL - rg - ppp;
+		if (((oldHL & 0x0FFF) - (rg & 0x0FFF) - ppp) & 0x1000) SET(fH);
+		if (((oldHL ^ rg) & (oldHL ^ temp) & 0x8000) != 0) SET(fPV);
+		SET(fN);
+	}
+	else
+	{
+		temp = oldHL + rg + ppp;
+		if (((oldHL & 0x0FFF) + (rg & 0x0FFF) + ppp) & 0x1000) SET(fH);
+		if ((~(oldHL ^ rg) & (oldHL ^ temp) & 0x8000) != 0) SET(fPV);
+	}
+
+	HL = (uint16_t)temp;
+	F |= H & (F3f | F5f);
+
+	if (HL == 0) SET(fZ);
+	if ((HL & 0x8000) != 0) SET(fS);
+	if ((temp & 0x010000) != 0) SET(fC);
+}
+
+uint8_t z80::inrdcr(uint8_t sl, uint8_t typ)
+{
+	F &= Cf; // C сохраняется
+	if (typ)
+	{
+		sl--;
+		if ((sl & 0x0F) == 0x0F) SET(fH);
+		if (sl == 0x7F) SET(fPV);
+		SET(fN);
+	}
+	else
+	{
+		sl++;
+		if ((sl & 0x0F) == 0) SET(fH);
+		if (sl == 0x80) SET(fPV);
+	}
+	if (sl == 0) SET(fZ);
+	if ((sl & 0x80) != 0) SET(fS);
+	F |= sl & (F3f | F5f);
 	return sl;
 }
 
@@ -464,8 +550,8 @@ uint8_t z80::bitOps(bool ix, bool iy) {
 		int8_t data;
 		mRes = memory->getByte(pc++, (uint8_t*)&data);
 		if (mRes) return 0;
-		if (ix) addr = ix + data; else {
-			if (iy) addr = iy + data;
+		if (ix) addr = IX.r16 + data; else {
+			if (iy) addr = IY.r16 + data;
 		}
 		mRes = memory->getByte(pc++, &code);
 		if (mRes) return 0;
@@ -476,7 +562,9 @@ uint8_t z80::bitOps(bool ix, bool iy) {
 	}
 
 	code >>= 3;
-	if ((code & 0x07) == 6) NumTicks = 15; else NumTicks = 8;
+	//if ((code & 0x07) == 6) NumTicks = 15; else NumTicks = 8;
+	if (ix || iy) NumTicks = 23; else 
+		if (numReg == 6) NumTicks = 15;	else NumTicks = 8;
 
 	switch (code) {
 	case 0x00: // rlc
@@ -493,14 +581,13 @@ uint8_t z80::bitOps(bool ix, bool iy) {
 		break;
 	case 0x02: // rl
 		olda = (regData & 0x80) >> 7;
-		dopcode = regData & 0x01;
+		dopcode = F & Cf;
 		regData = (regData << 1) | dopcode;
 		setfl(regData, (bool)olda, false, false);
 		break;
 	case 0x03: // rr
 		olda = regData & 0x01;
-		dopcode = regData & 0x01;
-		dopcode <<= 7;
+		dopcode = (F & Cf) << 7;
 		regData = dopcode | (regData >> 1);
 		setfl(regData, (bool)olda, false, false);
 		break;
@@ -550,13 +637,16 @@ uint8_t z80::bitOps(bool ix, bool iy) {
 		else {
 			CLEAR(fZ);
 			CLEAR(fPV);
-			if (code == 7) SET(fS);
-			if (code == 3) SET(f3);
-			if (code == 5) SET(f5);
+			uint8_t bitNum = code - 8;
+			if (bitNum == 7) SET(fS);
+			if (bitNum == 3) SET(f3);
+			if (bitNum == 5) SET(f5);
 		}
 		SET(fH);
 		CLEAR(fN);
-		if (NumTicks == 15) NumTicks = 12;
+		//if (NumTicks == 15) NumTicks = 12;
+		if (NumTicks == 15) NumTicks = 12; else 
+			if (NumTicks == 23) NumTicks = 20;
 		regData = oldRegData;
 		break;
 	case 0x10:
@@ -568,7 +658,7 @@ uint8_t z80::bitOps(bool ix, bool iy) {
 	case 0x16:
 	case 0x17: // res
 		olda = code - 0x10;
-		dopcode = !(1 << olda);
+		dopcode = ~(1 << olda);
 		regData &= dopcode;
 		break;
 	case 0x18:
@@ -579,7 +669,7 @@ uint8_t z80::bitOps(bool ix, bool iy) {
 	case 0x1d:
 	case 0x1e:
 	case 0x1f: // set
-		olda = code - 0x10;
+		olda = code - 0x18;
 		dopcode = (1 << olda);
 		regData |= dopcode;
 		break;
@@ -632,6 +722,7 @@ uint8_t z80::miscOps() {
 		pc += 2;
 		mRes = memory->setWord(addr, BC);
 		NumTicks = 20;
+		break;
 	case 0x44: //neg
 		temp = A;
 		A = 0;
@@ -642,6 +733,7 @@ uint8_t z80::miscOps() {
 		mRes = memory->getWordFromStack(sp, &pc);
 		sp += 2;
 		IFF1 = IFF2;
+		INTE = IFF1;
 		NumTicks = 14;
 		break;
 	case 0x46: //im 0
@@ -678,6 +770,8 @@ uint8_t z80::miscOps() {
 	case 0x4D: //reti
 		mRes = memory->getWordFromStack(sp, &pc);
 		sp += 2;
+		IFF1 = IFF2;
+		INTE = IFF1;
 		NumTicks = 14;
 		break;
 	case 0x4f: //ld r, a
@@ -706,12 +800,14 @@ uint8_t z80::miscOps() {
 		pc += 2;
 		mRes = memory->setWord(addr, DE);
 		NumTicks = 20;
+		break;
 	case 0x56: //im 1
 		interruptMode = 1;
 		NumTicks = 8;
 		break;
 	case 0x57: //ld a, i
 		A = I;
+		F = uint8_t((F & Cf) | (A & (F3f | F5f)) | (A == 0 ? Zf : 0) | ((A & 0x80) ? Sf : 0) | (IFF2 ? PVf : 0));
 		NumTicks = 9;
 		break;
 	case 0x58: //in e,(c)
@@ -743,6 +839,7 @@ uint8_t z80::miscOps() {
 		break;
 	case 0x5f: //ld a, r
 		A = R;
+		F = uint8_t((F & Cf)|(A & (F3f | F5f))|(A == 0 ? Zf : 0)|((A & 0x80) ? Sf : 0)| (IFF2 ? PVf : 0));
 		NumTicks = 9;
 		break;
 	case 0x60: //in h,(c)
@@ -767,6 +864,7 @@ uint8_t z80::miscOps() {
 		pc += 2;
 		mRes = memory->setWord(addr, HL);
 		NumTicks = 20;
+		break;
 	case 0x67: //rrd
 		mRes = memory->getByte(HL, &temp);
 		temp1 = (A & 0x0F) << 4;
@@ -870,8 +968,10 @@ uint8_t z80::miscOps() {
 	case 0xA1: //cpi
 		mRes = memory->getByte(HL, &temp);
 		temp1 = A;
-		summ(C, 0, 1);
+		temp2 = F & Cf;
+		summ(temp, 0, 1);
 		A = temp1;
+		F = (F & ~(Cf | PVf)) | temp2;
 		HL++;
 		BC--;
 		if (BC) SET(fPV); else CLEAR(fPV);
@@ -884,7 +984,7 @@ uint8_t z80::miscOps() {
 		mRes = memory->setByte(HL, temp);
 		HL++;
 		B--;
-		setfl(A, false, false, false);
+		setfl(B, false, false, false);
 		NumTicks = 16;
 		break;
 	case 0xA3: //outi
@@ -894,7 +994,7 @@ uint8_t z80::miscOps() {
 		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, temp);
 		HL++;
 		B--;
-		setfl(A, false, false, false);
+		setfl(B, false, false, false);
 		NumTicks = 16;
 		break;
 	case 0xA8: //ldd
@@ -911,8 +1011,10 @@ uint8_t z80::miscOps() {
 	case 0xA9: //cpd
 		mRes = memory->getByte(HL, &temp);
 		temp1 = A;
-		summ(C, 0, 1);
+		temp2 = F & Cf;
+		summ(temp, 0, 1);
 		A = temp1;
+		F = (F & ~(Cf | PVf)) | temp2;
 		HL--;
 		BC--;
 		if (BC) SET(fPV); else CLEAR(fPV);
@@ -925,7 +1027,7 @@ uint8_t z80::miscOps() {
 		mRes = memory->setByte(HL, temp);
 		HL--;
 		B--;
-		setfl(A, false, false, false);
+		setfl(B, false, false, false);
 		NumTicks = 16;
 		break;
 	case 0xAB: //outd
@@ -935,7 +1037,7 @@ uint8_t z80::miscOps() {
 		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, temp);
 		HL--;
 		B--;
-		setfl(A, false, false, false);
+		setfl(B, false, false, false);
 		NumTicks = 16;
 		break;
 	case 0xB0: //ldir
@@ -959,17 +1061,18 @@ uint8_t z80::miscOps() {
 	case 0xB1: //cpir
 		mRes = memory->getByte(HL, &temp);
 		temp1 = A;
-		summ(C, 0, 1);
+		temp2 = F & Cf;
+		summ(temp, 0, 1);
 		A = temp1;
+		F = (F & ~(Cf | PVf)) | temp2;
 		HL++;
 		BC--;
-		if (BC) {
-			SET(fPV);
+		if (BC) SET(fPV);
+		if (BC && !(F & Zf)) {
 			NumTicks = 21;
 			pc -= 2;
 		}
 		else {
-			CLEAR(fPV);
 			NumTicks = 16;
 		}
 		break;
@@ -980,8 +1083,8 @@ uint8_t z80::miscOps() {
 		mRes = memory->setByte(HL, temp);
 		HL++;
 		B--;
-		setfl(A, false, false, false);
-		if (BC) {
+		setfl(B, false, false, false);
+		if (B) {
 			NumTicks = 21;
 			pc -= 2;
 		}
@@ -996,8 +1099,8 @@ uint8_t z80::miscOps() {
 		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, temp);
 		HL++;
 		B--;
-		setfl(A, false, false, false);
-		if (BC) {
+		setfl(B, false, false, false);
+		if (B) {
 			NumTicks = 21;
 			pc -= 2;
 		}
@@ -1026,17 +1129,18 @@ uint8_t z80::miscOps() {
 	case 0xB9: //cpdr
 		mRes = memory->getByte(HL, &temp);
 		temp1 = A;
-		summ(C, 0, 1);
+		temp2 = F & Cf;
+		summ(temp, 0, 1);
 		A = temp1;
+		F = (F & ~(Cf | PVf)) | temp2;
 		HL--;
 		BC--;
-		if (BC) {
-			SET(fPV);
+		if (BC) SET(fPV);
+		if (BC && !(F & Zf)) {
 			NumTicks = 21;
 			pc -= 2;
 		}
 		else {
-			CLEAR(fPV);
 			NumTicks = 16;
 		}
 		break;
@@ -1047,8 +1151,8 @@ uint8_t z80::miscOps() {
 		mRes = memory->setByte(HL, temp);
 		HL--;
 		B--;
-		setfl(A, false, false, false);
-		if (BC) {
+		setfl(B, false, false, false);
+		if (B) {
 			NumTicks = 21;
 			pc -= 2;
 		}
@@ -1063,8 +1167,8 @@ uint8_t z80::miscOps() {
 		if (prt[portAddr] != NULL) prt[portAddr]->setPortData(portAddr, temp);
 		HL--;
 		B--;
-		setfl(A, false, false, false);
-		if (BC) {
+		setfl(B, false, false, false);
+		if (B) {
 			NumTicks = 21;
 			pc -= 2;
 		}
@@ -1079,12 +1183,828 @@ uint8_t z80::miscOps() {
 	return NumTicks;
 }
 
-uint8_t z80::ixOps() {
-	return 0;
-}
+uint8_t z80::ixiyOps(bool isIX, bool isIY) {
+	uint16_t addr;
+	uint8_t dopcode, olda, b1;
+	uint8_t NumTicks = 0;
+	uint16_t afl;
+	z80reg16 ixiytemp;
 
-uint8_t z80::iyOps() {
-	return 0;
+	if (isIX) ixiytemp = IX;
+	if (isIY) ixiytemp = IY;
+	
+	uint8_t code;
+	bool mRes = false;
+	mRes = memory->getByte(pc++, &code);
+	if (mRes) {
+		return NumTicks;
+	}
+
+	switch (code)
+	{
+	case 0x04: //{inc b}
+		B = inrdcr(B, 0);
+		NumTicks = 8;
+		break;
+	case 0x05: //{dec b}
+		B = inrdcr(B, 1);
+		NumTicks = 8;
+		break;
+	case 0x06: //{ld b, d8}
+		mRes = memory->getByte(pc++, &B);
+		NumTicks = 11;
+		break;
+	case 0x09: //{add ix,bc}
+		ixiytemp.r16 = add16(ixiytemp.r16, BC);
+		NumTicks = 15;
+		break;
+	case 0x0C: // {inc c}
+		C = inrdcr(C, 0);
+		NumTicks = 8;
+		break;
+	case 0x0D: //{dec c}
+		C = inrdcr(C, 1);
+		NumTicks = 8;
+		break;
+	case 0x0E: // {ld c, d8}
+		mRes = memory->getByte(pc++, &C);
+		NumTicks = 11;
+		break;
+	case 0x14: // {inc d}
+		D = inrdcr(D, 0);
+		NumTicks = 8;
+		break;
+	case 0x15: // {dec d}
+		D = inrdcr(D, 1);
+		NumTicks = 8;
+		break;
+	case 0x16: // {ld d, d8}
+		mRes = memory->getByte(pc++, &D);
+		NumTicks = 11;
+		break;
+	case 0x19: // {add ix, de}
+		ixiytemp.r16 = add16(ixiytemp.r16, DE);
+		NumTicks = 15;
+		break;
+	case 0x1C: // {inc e}
+		E = inrdcr(E, 0);
+		NumTicks = 8;
+		break;
+	case 0x1D: // {dec e}
+		E = inrdcr(E, 1);
+		NumTicks = 8;
+		break;
+	case 0x1E: // {ld e, d8}
+		mRes = memory->getByte(pc++, &E);
+		NumTicks = 11;
+		break;
+	case 0x21: // {ld ix, d16}
+		mRes = memory->getWord(pc, &ixiytemp.r16);
+		pc += 2;
+		NumTicks = 14;
+		break;
+	case 0x22: // {ld (d16), ix}
+		mRes = memory->getWord(pc, &addr);
+		pc += 2;
+		mRes = memory->setWord(addr, ixiytemp.r16);
+		NumTicks = 20;
+		break;
+	case 0x23: // {inc ix}
+		ixiytemp.r16++;
+		NumTicks = 10;
+		break;
+	case 0x24: // {inc ixh}
+		ixiytemp.r8.hi = inrdcr(ixiytemp.r8.hi, 0);
+		NumTicks = 8;
+		break;
+	case 0x25: /// {dec ixh}
+		ixiytemp.r8.hi = inrdcr(ixiytemp.r8.hi, 1);
+		NumTicks = 8;
+		break;
+	case 0x26: // {ld ixh, d8}
+		mRes = memory->getByte(pc++, &ixiytemp.r8.hi);
+		NumTicks = 11;
+		break;
+	case 0x29: // {add ix, ix}
+		ixiytemp.r16 = add16(ixiytemp.r16, ixiytemp.r16);
+		NumTicks = 15;
+		break;
+	case 0x2A: // {ld ix, (addr)}
+		mRes = memory->getWord(pc, &addr);
+		pc += 2;
+		mRes = memory->getWord(addr, &ixiytemp.r16);
+		NumTicks = 20;
+		break;
+	case 0x2B: // {dec ix}
+		ixiytemp.r16--;
+		NumTicks = 10;
+		break;
+	case 0x2C: // {inc ixl}
+		ixiytemp.r8.lo = inrdcr(ixiytemp.r8.lo, 0);
+		NumTicks = 8;
+		break;
+	case 0x2D: // {dec ixl}
+		ixiytemp.r8.lo = inrdcr(ixiytemp.r8.lo, 1);
+		NumTicks = 8;
+		break;
+	case 0x2E: // {ld ixl, d8}
+		mRes = memory->getByte(pc++, &ixiytemp.r8.lo);
+		NumTicks = 11;
+		break;
+	case 0x34: // {inc (ix+d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &dopcode);
+		dopcode = inrdcr(dopcode, 0);
+		mRes = memory->setByte(addr, dopcode);
+		NumTicks = 23;
+		break;
+	case 0x35: // {dec (ix+d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &dopcode);
+		dopcode = inrdcr(dopcode, 1);
+		mRes = memory->setByte(addr, dopcode);
+		NumTicks = 23;
+		break;
+	case 0x36: // {ld (ix+d), d8}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(pc++, &dopcode);
+		mRes = memory->setByte(addr, dopcode);
+		NumTicks = 19;
+		break;
+	case 0x39: // {add ix, sp}
+		ixiytemp.r16 = add16(ixiytemp.r16, sp);
+		NumTicks = 15;
+		break;
+	case 0x3C: // {inc a}
+		A = inrdcr(A, 0);
+		NumTicks = 8;
+		break;
+	case 0x3D: // {dec a}
+		A = inrdcr(A, 1);
+		NumTicks = 8;
+		break;
+	case 0x3E: // {ld a,b1}
+		mRes = memory->getByte(pc++, &A);
+		NumTicks = 11;
+		break;
+	case 0x40: // {ld b,b}
+		NumTicks = 8;
+		break;
+	case 0x41: // {ld b,c}
+		B = C;
+		NumTicks = 8;
+		break;
+	case 0x42: // {ld b,d}
+		B = D;
+		NumTicks = 8;
+		break;
+	case 0x43: // {ld b,e}
+		B = E;
+		NumTicks = 8;
+		break;
+	case 0x44: // {ld b,ixh}
+		B = ixiytemp.r8.hi;
+		NumTicks = 8;
+		break;
+	case 0x45: // {ld b,ixl}
+		B = ixiytemp.r8.lo;
+		NumTicks = 8;
+		break;
+	case 0x46: // {ld b,(ix+d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &B);
+		NumTicks = 19;
+		break;
+	case 0x47: // {ld b,a}
+		B = A;
+		NumTicks = 8;
+		break;
+	case 0x48: // {ld c,b}
+		C = B;
+		NumTicks = 8;
+		break;
+	case 0x49: // {ld c,c}
+		NumTicks = 8;
+		break;
+	case 0x4A: // {ld c,d}
+		C = D;
+		NumTicks = 8;
+		break;
+	case 0x4B: // {ld c,e}
+		C = E;
+		NumTicks = 8;
+		break;
+	case 0x4C: // {ld c,ixh}
+		C = ixiytemp.r8.hi;
+		NumTicks = 8;
+		break;
+	case 0x4D: // {ld c,ixl}
+		C = ixiytemp.r8.lo;
+		NumTicks = 8;
+		break;
+	case 0x4E: // {ld c,(ix+d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &C);
+		NumTicks = 19;
+		break;
+	case 0x4F: // {ld c,a}
+		C = A;
+		NumTicks = 8;
+		break;
+	case 0x50: // {ld d,b}
+		D = B;
+		NumTicks = 8;
+		break;
+	case 0x51: // {ld d,c}
+		D = C;
+		NumTicks = 8;
+		break;
+	case 0x52: // {ld d,d}
+		NumTicks = 8;
+		break;
+	case 0x53: // {ld d,e}
+		D = E;
+		NumTicks = 8;
+		break;
+	case 0x54: // {ld d,ixh}
+		D = ixiytemp.r8.hi;
+		NumTicks = 8;
+		break;
+	case 0x55: // {ld d,ixl}
+		D = ixiytemp.r8.lo;
+		NumTicks = 8;
+		break;
+	case 0x56: // {ld d,(ix + d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &D);
+		NumTicks = 19;
+		break;
+	case 0x57: // {ld d,a}
+		D = A;
+		NumTicks = 8;
+		break;
+	case 0x58: // {ld e,b}
+		E = B;
+		NumTicks = 8;
+		break;
+	case 0x59: // {ld e,c}
+		E = C;
+		NumTicks = 8;
+		break;
+	case 0x5A: // {ld e,d}
+		E = D;
+		NumTicks = 8;
+		break;
+	case 0x5B: // {ld e,e}
+		NumTicks = 8;
+		break;
+	case 0x5C: // {ld e,ixh}
+		E = ixiytemp.r8.hi;
+		NumTicks = 8;
+		break;
+	case 0x5D: // {ld e,ixl}
+		E = ixiytemp.r8.lo;
+		NumTicks = 8;
+		break;
+	case 0x5E: // {ld e,(ix + d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &E);
+		NumTicks = 19;
+		break;
+	case 0x5F: // {ld e,a}
+		E = A;
+		NumTicks = 8;
+		break;
+	case 0x60: // {ld ixh,b}
+		ixiytemp.r8.hi = B;
+		NumTicks = 8;
+		break;
+	case 0x61: // {ld ixh,c}
+		ixiytemp.r8.hi = C;
+		NumTicks = 8;
+		break;
+	case 0x62: // {ld ixh,d}
+		ixiytemp.r8.hi = D;
+		NumTicks = 8;
+		break;
+	case 0x63: // {ld ixh,e}
+		ixiytemp.r8.hi = E;
+		NumTicks = 8;
+		break;
+	case 0x64: // {ld ixh,ixh}
+		NumTicks = 8;
+		break;
+	case 0x65: // {ld ixh,ixl}
+		ixiytemp.r8.hi = ixiytemp.r8.lo;
+		NumTicks = 8;
+		break;
+	case 0x66: // {ld h,(ix + d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &H);
+		NumTicks = 19;
+		break;
+	case 0x67: // {ld ixh,a}
+		ixiytemp.r8.hi = A;
+		NumTicks = 8;
+		break;
+	case 0x68: // {ld ixl,b}
+		ixiytemp.r8.lo = B;
+		NumTicks = 8;
+		break;
+	case 0x69: // {ld ixl,c}
+		ixiytemp.r8.lo = C;
+		NumTicks = 8;
+		break;
+	case 0x6A: // {ld ixl,d}
+		ixiytemp.r8.lo = D;
+		NumTicks = 8;
+		break;
+	case 0x6B: // {ld ixl,e}
+		ixiytemp.r8.lo = E;
+		NumTicks = 8;
+		break;
+	case 0x6C: // {ld ixl,ixh}
+		ixiytemp.r8.lo = ixiytemp.r8.hi;
+		NumTicks = 8;
+		break;
+	case 0x6D: // {ld ixl,ixl}
+		NumTicks = 8;
+		break;
+	case 0x6E: // {ld l,(ix + d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &L);
+		NumTicks = 19;
+		break;
+	case 0x6F: // {ld ixl,a}
+		ixiytemp.r8.lo = A;
+		NumTicks = 8;
+		break;
+	case 0x70: // {ld (ix + d),b}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->setByte(addr, B);
+		NumTicks = 19;
+		break;
+	case 0x71: // {ld (ix + d),c}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->setByte(addr, C);
+		NumTicks = 19;
+		break;
+	case 0x72: // {ld (ix + d),d}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->setByte(addr, D);
+		NumTicks = 19;
+		break;
+	case 0x73: // {ld (ix + d),e}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->setByte(addr, E);
+		NumTicks = 19;
+		break;
+	case 0x74: // {ld (ix + d),h}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->setByte(addr, H);
+		NumTicks = 19;
+		break;
+	case 0x75: // {ld (ix + d),l}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->setByte(addr, L);
+		NumTicks = 19;
+		break;
+	case 0x77: // ld (ix + d),a}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->setByte(addr, A);
+		NumTicks = 19;
+		break;
+	case 0x78: // {ld a,b}
+		A = B;
+		NumTicks = 8;
+		break;
+	case 0x79: // {ld a,c}
+		A = C;
+		NumTicks = 8;
+		break;
+	case 0x7A: // {ld a,d}
+		A = D;
+		NumTicks = 8;
+		break;
+	case 0x7B: // {ld a,e}
+		A = E;
+		NumTicks = 8;
+		break;
+	case 0x7C: // {ld a,ixh}
+		A = ixiytemp.r8.hi;
+		NumTicks = 8;
+		break;
+	case 0x7D: // {ld a,ixl}
+		A = ixiytemp.r8.lo;
+		NumTicks = 8;
+		break;
+	case 0x7E: // {ld a,(ix + d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &A);
+		NumTicks = 19;
+		break;
+	case 0x7F: // {ld a,a}
+		NumTicks = 8;
+		break;
+	case 0x80: // {add a, b}
+		summ(B, 0, 0);
+		NumTicks = 8;
+		break;
+	case 0x81: // {add a, c}
+		summ(C, 0, 0);
+		NumTicks = 8;
+		break;
+	case 0x82: // {add a, d}
+		summ(D, 0, 0);
+		NumTicks = 8;
+		break;
+	case 0x83: // {add a, e}
+		summ(E, 0, 0);
+		NumTicks = 8;
+		break;
+	case 0x84: // {add a, ixh}
+		summ(ixiytemp.r8.hi, 0, 0);
+		NumTicks = 8;
+		break;
+	case 0x85: // {add a, ixl}
+		summ(ixiytemp.r8.lo, 0, 0);
+		NumTicks = 8;
+		break;
+	case 0x86: // {add a, (ix + d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &b1);
+		summ(b1, 0, 0);
+		NumTicks = 19;
+		break;
+	case 0x87: // {add a, a}
+		summ(A, 0, 0);
+		NumTicks = 8;
+		break;
+	case 0x88: // {adc a, b}
+		summ(B, F & 0x01, 0);
+		NumTicks = 8;
+		break;
+	case 0x89: // {adc a, c}
+		summ(C, F & 0x01, 0);
+		NumTicks = 8;
+		break;
+	case 0x8A: // {adc a, d}
+		summ(D, F & 0x01, 0);
+		NumTicks = 8;
+		break;
+	case 0x8B: // {adc a, e}
+		summ(E, F & 0x01, 0);
+		NumTicks = 8;
+		break;
+	case 0x8C: // {adc a, ixh}
+		summ(ixiytemp.r8.hi, F & 0x01, 0);
+		NumTicks = 8;
+		break;
+	case 0x8D: // {adc a, ixl}
+		summ(ixiytemp.r8.lo, F & 0x01, 0);
+		NumTicks = 8;
+		break;
+	case 0x8E: // {adc a, (ix + d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &b1);
+		summ(b1, F & 0x01, 0);
+		NumTicks = 19;
+		break;
+	case 0x8F: // {adc a, a}
+		summ(A, F & 0x01, 0);
+		NumTicks = 8;
+		break;
+	case 0x90: // {sub b}
+		summ(B, 0, 1);
+		NumTicks = 8;
+		break;
+	case 0x91: // {sub c}
+		summ(C, 0, 1);
+		NumTicks = 8;
+		break;
+	case 0x92: // {sub d}
+		summ(D, 0, 1);
+		NumTicks = 8;
+		break;
+	case 0x93: // {sub e}
+		summ(E, 0, 1);
+		NumTicks = 8;
+		break;
+	case 0x94: // {sub ixh}
+		summ(ixiytemp.r8.hi, 0, 1);
+		NumTicks = 8;
+		break;
+	case 0x95: // {sub ixl}
+		summ(ixiytemp.r8.lo, 0, 1);
+		NumTicks = 8;
+		break;
+	case 0x96: // {sub (ix + d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &b1);
+		summ(b1, 0, 1);
+		NumTicks = 19;
+		break;
+	case 0x97: // {sub a}
+		summ(A, 0, 1);
+		NumTicks = 8;
+		break;
+	case 0x98: // {sbc a, b}
+		summ(B, F & 0x01, 1);
+		NumTicks = 8;
+		break;
+	case 0x99: // {sbc a, c}
+		summ(C, F & 0x01, 1);
+		NumTicks = 8;
+		break;
+	case 0x9A: // {sbc a, d}
+		summ(D, F & 0x01, 1);
+		NumTicks = 8;
+		break;
+	case 0x9B: // {sbc a, e}
+		summ(E, F & 0x01, 1);
+		NumTicks = 8;
+		break;
+	case 0x9C: // {sbc a, ixh}
+		summ(ixiytemp.r8.hi, F & 0x01, 1);
+		NumTicks = 8;
+		break;
+	case 0x9D: // {sbc a, ixl}
+		summ(ixiytemp.r8.lo, F & 0x01, 1);
+		NumTicks = 8;
+		break;
+	case 0x9E: // {sbc a, (ix + d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &b1);
+		summ(b1, F & 0x01, 1);
+		NumTicks = 19;
+		break;
+	case 0x9F: // {sbc a, a}
+		summ(A, F & 0x01, 1);
+		NumTicks = 8;
+		break;
+	case 0xA0: // {and b}
+		A &= B;
+		setfl(true);
+		NumTicks = 8;
+		break;
+	case 0xA1: // {and c}
+		A &= C;
+		setfl(true);
+		NumTicks = 8;
+		break;
+	case 0xA2: // {and d}
+		A &= D;
+		setfl(true);
+		NumTicks = 8;
+		break;
+	case 0xA3: // {and e}
+		A &= E;
+		setfl(true);
+		NumTicks = 8;
+		break;
+	case 0xA4: // {and ixh}
+		A &= ixiytemp.r8.hi;
+		setfl(true);
+		NumTicks = 8;
+		break;
+	case 0xA5: // {and ixl}
+		A &= ixiytemp.r8.lo;
+		setfl(true);
+		NumTicks = 8;
+		break;
+	case 0xA6: // {and (ix + d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &b1);
+		A &= b1;
+		setfl(true);
+		NumTicks = 19;
+		break;
+	case 0xA7: // {and a}
+		A &= A;
+		setfl(true);
+		NumTicks = 8;
+		break;
+	case 0xA8: // {xor b}
+		A ^= B;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xA9: // {xor c}
+		A ^= C;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xAA: // {xor d}
+		A ^= D;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xAB: // {xor e}
+		A ^= E;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xAC: // {xor ixh}
+		A ^= ixiytemp.r8.hi;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xAD: // {xor ixl}
+		A ^= ixiytemp.r8.lo;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xAE: // {xor (ix + d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &b1);
+		A ^= b1;
+		setfl(false);
+		NumTicks = 19;
+		break;
+	case 0xAF: // {xor a}
+		A ^= A;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xB0: // {or b}
+		A |= B;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xB1: // {or c}
+		A |= C;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xB2: // {or d}
+		A |= D;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xB3: // {or e}
+		A |= E;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xB4: // {or ixh}
+		A |= ixiytemp.r8.hi;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xB5: // {or ixl}
+		A |= ixiytemp.r8.lo;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xB6: // {or (ix + d)}
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &b1);
+		A |= b1;
+		setfl(false);
+		NumTicks = 19;
+		break;
+	case 0xB7: // {or a}
+		A |= A;
+		setfl(false);
+		NumTicks = 8;
+		break;
+	case 0xB8: // {cp b}
+		olda = A;
+		summ(B, 0, 1);
+		A = olda;
+		NumTicks = 8;
+		break;
+	case 0xB9: // {cp c}
+		olda = A;
+		summ(C, 0, 1);
+		A = olda;
+		NumTicks = 8;
+		break;
+	case 0xBA: // {cp d}
+		olda = A;
+		summ(D, 0, 1);
+		A = olda;
+		NumTicks = 8;
+		break;
+	case 0xBB: // {cp e}
+		olda = A;
+		summ(E, 0, 1);
+		A = olda;
+		NumTicks = 8;
+		break;
+	case 0xBC: // {cp ixh}
+		olda = A;
+		summ(ixiytemp.r8.hi, 0, 1);
+		A = olda;
+		NumTicks = 8;
+		break;
+	case 0xBD: // {cp ixl}
+		olda = A;
+		summ(ixiytemp.r8.lo, 0, 1);
+		A = olda;
+		NumTicks = 8;
+		break;
+	case 0xBE: // {cp (ix + d)}
+		olda = A;
+		mRes = memory->getByte(pc, &b1);
+		pc++;
+		addr = ixiytemp.r16 + (int8_t)b1;
+		mRes = memory->getByte(addr, &dopcode);
+		summ(dopcode, 0, 1);
+		A = olda;
+		NumTicks = 19;
+		break;
+	case 0xBF: // {cp a}
+		olda = A;
+		summ(A, 0, 1);
+		A = olda;
+		NumTicks = 8;
+		break;
+	case 0xCB: // prefix bit operation
+		NumTicks = bitOps(isIX, isIY);
+		break;
+	case 0xE1: // {pop ix}
+		mRes = memory->getWordFromStack(sp, &ixiytemp.r16);
+		sp += 2;
+		NumTicks = 14;
+		break;
+	case 0xE3: // {ex (sp), ix}
+		mRes = memory->getWordFromStack(sp, &addr);
+		mRes = memory->setWordToStack(sp, ixiytemp.r16);
+		ixiytemp.r16 = addr;
+		NumTicks = 23;
+		break;
+	case 0xE5: // {push ix}
+		sp -= 2;
+		mRes = memory->setWordToStack(sp, ixiytemp.r16);
+		NumTicks = 15;
+		break;
+	case 0xE9: // {jp (ix)}
+		pc = ixiytemp.r16;
+		NumTicks = 8;
+		break;
+	case 0xF9: // {ld sp, ix}
+		sp = ixiytemp.r16;
+		NumTicks = 10;
+		break;
+	}
+
+	if (isIX) IX = ixiytemp;
+	if (isIY) IY = ixiytemp;
+
+	if (mRes) {
+		return 0;
+	}
+	return NumTicks;
+
 }
 
 uint8_t z80::execute() {
@@ -1092,6 +2012,7 @@ uint8_t z80::execute() {
 	uint8_t dopcode, olda, b1;
 	uint8_t NumTicks = 0;
 	uint16_t afl;
+	uint8_t tmp;
 
 	if (HLT && !INTE) return 4;
 	if (HLT) return 4;
@@ -1196,14 +2117,12 @@ uint8_t z80::execute() {
 		NumTicks = 4;
 		break;
 	case 0x10: // djnz d8
-		mRes = memory->getByte(pc, &b1);
+		mRes = memory->getByte(pc++, &b1);
 		B--;
 		if (B == 0) {
-			pc++;
 			NumTicks = 8;
 		}
 		else {
-			pc--;
 			pc += (int8_t)b1;
 			NumTicks = 13;
 		}
@@ -1243,8 +2162,7 @@ uint8_t z80::execute() {
 		NumTicks = 4;
 		break;
 	case 0x18: // jr d8
-		mRes = memory->getByte(pc, &b1);
-		pc--;
+		mRes = memory->getByte(pc++, &b1);
 		pc += (int8_t)b1;
 		NumTicks = 12;
 		break;
@@ -1283,14 +2201,12 @@ uint8_t z80::execute() {
 		NumTicks = 4;
 		break;
 	case 0x20: // jr nz, d8
-		mRes = memory->getByte(pc, &b1);
-		pc--;
-		if (F & Zf == 0) {
+		mRes = memory->getByte(pc++, &b1);
+		if ((F & Zf) == 0) {
 			pc += (int8_t)b1;
 			NumTicks = 12;
 		}
 		else {
-			pc += 2;
 			NumTicks = 7;
 		}
 		break;
@@ -1329,14 +2245,12 @@ uint8_t z80::execute() {
 		}
 		break;
 	case 0x28: // jr z,d8
-		mRes = memory->getByte(pc, &b1);
-		pc--;
-		if (F & Zf == Zf) {
+		mRes = memory->getByte(pc++, &b1);
+		if ((F & Zf) == Zf) {
 			pc += (int8_t)b1;
 			NumTicks = 12;
 		}
 		else {
-			pc += 2;
 			NumTicks = 7;
 		}
 		break;
@@ -1367,18 +2281,16 @@ uint8_t z80::execute() {
 		NumTicks = 7;
 		break;
 	case 0x2F: // {cpl}
-		F = (uint8_t)((F & (Sf | Zf | PVf | Cf) ^ Cf) | (((A = ~A) & (F3f | F5f)) | Hf | Nf));
+		F = (uint8_t)((F & (Sf | Zf | PVf | Cf)) | (((A = ~A) & (F3f | F5f)) | Hf | Nf));
 		NumTicks = 4;
 		break;
 	case 0x30: // jr nc, d8
-		mRes = memory->getByte(pc, &b1);
-		pc--;
-		if (F & Cf == 0) {
+		mRes = memory->getByte(pc++, &b1);
+		if ((F & Cf) == 0) {
 			pc += (int8_t)b1;
 			NumTicks = 12;
 		}
 		else {
-			pc += 2;
 			NumTicks = 7;
 		}
 		break;
@@ -1419,14 +2331,12 @@ uint8_t z80::execute() {
 		NumTicks = 4;
 		break;
 	case 0x38: // jr c, d8
-		mRes = memory->getByte(pc, &b1);
-		pc--;
-		if (F & Cf == Cf) {
+		mRes = memory->getByte(pc++, &b1);
+		if ((F & Cf) == Cf) {
 			pc += (int8_t)b1;
 			NumTicks = 12;
 		}
 		else {
-			pc += 2;
 			NumTicks = 7;
 		}
 		break;
@@ -1475,7 +2385,7 @@ uint8_t z80::execute() {
 		NumTicks = 4;
 		break;
 	case 0x43: // {ld b,e}
-		D = E;
+		B = E;
 		NumTicks = 4;
 		break;
 	case 0x44: // {ld b,h}
@@ -1737,7 +2647,6 @@ uint8_t z80::execute() {
 		NumTicks = 4;
 		break;
 	case 0x86: // {add a, (hl)}
-		uint8_t tmp;
 		mRes = memory->getByte(HL, &tmp);
 		summ(tmp, 0, 0);
 		NumTicks = 7;
@@ -2064,7 +2973,7 @@ uint8_t z80::execute() {
 		NumTicks = 7;
 		break;
 	case 0xC7: // {rst 00h}
-		sp -= 2;;
+		sp -= 2;
 		mRes = memory->setWordToStack(sp, pc);
 		pc = 0;
 		NumTicks = 11;
@@ -2204,7 +3113,7 @@ uint8_t z80::execute() {
 		mRes = memory->getByte(pc++, &b1);
 		uint16_t portAddr = ((uint16_t)A << 8) | b1;
 		A = ports_in[portAddr];
-		if (prt[portAddr] != NULL) A = prt[portAddr]->getPortData(b1);
+		if (prt[portAddr] != NULL) A = prt[portAddr]->getPortData(portAddr);
 		NumTicks = 11;
 	}
 		break;
@@ -2221,7 +3130,14 @@ uint8_t z80::execute() {
 		else NumTicks = 10;
 		break;
 	case 0xDD: 
-		NumTicks = ixOps();
+		mRes = memory->getByte(pc, &b1);
+		if (b1 == 0xCB) {
+			pc++;
+			NumTicks = bitOps(true,false);
+		}
+		else {
+			NumTicks = ixiyOps(true, false);
+		}
 		break;
 	case 0xDE: // {sbc a, n}
 		mRes = memory->getByte(pc++, &b1);
@@ -2304,7 +3220,7 @@ uint8_t z80::execute() {
 		break;
 	case 0xEA: // {jp pe, addr}
 		mRes = memory->getWord(pc, &addr);
-		if (FLAG(fPV) == 1) pc = addr;
+		if (FLAG(fPV) == 1) pc = addr; else pc += 2;
 		NumTicks = 10;
 		break;
 	case 0xEB: // {ex de, hl}
@@ -2315,6 +3231,7 @@ uint8_t z80::execute() {
 		break;
 	case 0xEC: // {call pe, addr}
 		mRes = memory->getWord(pc, &addr);
+		pc += 2;
 		if (FLAG(fPV) == 1)
 		{
 			sp -= 2;
@@ -2363,6 +3280,8 @@ uint8_t z80::execute() {
 		break;
 	case 0xF3: // {di}
 		INTE = false;
+		IFF1 = false;
+		IFF2 = false;
 		NumTicks = 4;
 		break;
 	case 0xF4: // {call p, addr}
@@ -2418,6 +3337,8 @@ uint8_t z80::execute() {
 		break;
 	case 0xFB: // {ei}
 		INTE = true;
+		IFF1 = true;
+		IFF2 = true;
 		NumTicks = 4;
 		break;
 	case 0xFC: // {call m, addr}
@@ -2433,7 +3354,14 @@ uint8_t z80::execute() {
 		else NumTicks = 10;
 		break;
 	case 0xFD:
-		NumTicks = iyOps();
+		mRes = memory->getByte(pc, &b1);
+		if (b1 == 0xCB) {
+			pc++;
+			NumTicks = bitOps(false, true);
+		}
+		else {
+			NumTicks = ixiyOps(false, true);
+		}
 		break;
 	case 0xFE: // {cp n}
 		mRes = memory->getByte(pc++, &b1);
@@ -2488,7 +3416,7 @@ std::string z80::bitOpsDasm(uint16_t* addr, bool ix, bool iy) {
 	int8_t data;
 
 	if (!ix && !iy) {
-		mRes = memory->getByte(pc++, &code);
+		mRes = memory->getByte((*addr)++, &code);
 		if (mRes) return "";
 		numReg = code & 0x07;
 
@@ -2497,9 +3425,9 @@ std::string z80::bitOpsDasm(uint16_t* addr, bool ix, bool iy) {
 
 	}
 	else {
-		mRes = memory->getByte(pc++, (uint8_t*)&data);
+		mRes = memory->getByte((*addr)++, (uint8_t*)&data);
 		if (mRes) return "";
-		mRes = memory->getByte(pc++, &code);
+		mRes = memory->getByte((*addr)++, &code);
 		if (mRes) return "";
 		numReg = code & 0x07;
 		if (numReg != 6) {
@@ -2558,10 +3486,10 @@ std::string z80::bitOpsDasm(uint16_t* addr, bool ix, bool iy) {
 				if (ix) srcName = "(IX+0x" + decToHexByte(data) + ")"; else {
 					if (iy) srcName = "(IY+0x" + decToHexByte(data) + ")";
 				}
-				s = "SRL " + btNum + "," + srcName;
+				s = "BIT " + btNum + "," + srcName;
 			}
 			else {
-				s = "SRL " + btNum + "," + regName;
+				s = "BIT " + btNum + "," + regName;
 			}
 		}
 		break;
@@ -2574,7 +3502,7 @@ std::string z80::bitOpsDasm(uint16_t* addr, bool ix, bool iy) {
 	case 0x16:
 	case 0x17: // res
 		{
-			sprintf_s((char*)buf, 16, "%d\0", code - 8);
+			sprintf_s((char*)buf, 16, "%d\0", code - 0x10);
 			std::string btNum((char*)buf);
 			s = "RES " + btNum + "," + srcName + regName;
 		}
@@ -2588,7 +3516,7 @@ std::string z80::bitOpsDasm(uint16_t* addr, bool ix, bool iy) {
 	case 0x1e:
 	case 0x1f: // set
 		{
-			sprintf_s((char*)buf, 16, "%d\0", code - 8);
+			sprintf_s((char*)buf, 16, "%d\0", code - 0x18);
 			std::string btNum((char*)buf);
 			s = "SET " + btNum + "," + srcName + regName;
 		}
@@ -2814,18 +3742,598 @@ std::string z80::miscOpsDasm(uint16_t* addr) {
 	return s;
 }
 
-std::string z80::ixOpsDasm(uint16_t* addr) {
+std::string z80::ixiyOpsDasm(uint16_t* addr, bool isIX, bool isIY) {
+
 	string s = "";
+	uint8_t code, b1, b2;
+	uint16_t w1;
+
+	string prefix = "";
+	if (isIX) prefix += "IX";
+	if (isIY) prefix += "IY";
+
+	bool mRes = memory->getByte(*addr, &code);
+	if (mRes) {
+		return s;
+	}
+	(*addr)++;
+
+	switch (code)
+	{
+	case 0x04: //{inc b}
+		s = s + "INC B";
+		break;
+	case 0x05: //{dec b}
+		s = s + "DEC B";
+		break;
+	case 0x06: //{ld b, d8}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD B, " + decToHexByte(b1);
+		break;
+	case 0x09: //{add ix,bc}
+		s = s + "ADD " + prefix + ", BC";
+		break;
+	case 0x0C: // {inc c}
+		s = s + "INC C";
+		break;
+	case 0x0D: //{dec c}
+		s = s + "DEC C";
+		break;
+	case 0x0E: // {ld c, d8}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD C, " + decToHexByte(b1);
+		break;
+	case 0x14: // {inc d}
+		s = s + "INC D";
+		break;
+	case 0x15: // {dec d}
+		s = s + "DEC D";
+		break;
+	case 0x16: // {ld d, d8}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD D, " + decToHexByte(b1);
+		break;
+	case 0x19: // {add ix, de}
+		s = s + "ADD " + prefix + ", DE";
+		break;
+	case 0x1C: // {inc e}
+		s = s + "INC E";
+		break;
+	case 0x1D: // {dec e}
+		s = s + "DEC E";
+		break;
+	case 0x1E: // {ld e, d8}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD E, " + decToHexByte(b1);
+		break;
+	case 0x21: // {ld ix, d16}
+		mRes = memory->getWord(*addr, &w1);
+		*addr += 2;
+		s = s + "LD " + prefix + "," + decToHexWord(w1);
+		break;
+	case 0x22: // {ld (d16), ix}
+		mRes = memory->getWord(*addr, &w1);
+		*addr += 2;
+		s = s + "LD (" + decToHexWord(w1) + "), " + prefix;
+		break;
+	case 0x23: // {inc ix}
+		s = s + "INC " + prefix;
+		break;
+	case 0x24: // {inc ixh}
+		s = s + "INC " + prefix + "H";
+		break;
+	case 0x25: /// {dec ixh}
+		s = s + "DEC " + prefix + "H";
+		break;
+	case 0x26: // {ld ixh, d8}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD " + prefix + "H, " + decToHexByte(b1);
+		break;
+	case 0x29: // {add ix, ix}
+		s = s + "ADD " + prefix + ", " + prefix;
+		break;
+	case 0x2A: // {ld ix, (addr)}
+		mRes = memory->getWord(*addr, &w1);
+		*addr += 2;
+		s = s + "LD " + prefix + ", (" + decToHexWord(w1) + ")";
+		break;
+	case 0x2B: // {dec ix}
+		s = s + "DEC " + prefix;
+		break;
+	case 0x2C: // {inc ixl}
+		s = s + "INC " + prefix + "L";
+		break;
+	case 0x2D: // {dec ixl}
+		s = s + "DEC " + prefix + "L";
+		break;
+	case 0x2E: // {ld ixl, d8}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD " + prefix + "L, " + decToHexByte(b1);
+		break;
+	case 0x34: // {inc (ix+d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "INC (" + prefix + "+ " + decToHexByte(b1) + ")";
+		break;
+	case 0x35: // {dec (ix+d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "DEC (" + prefix + "+ " + decToHexByte(b1) + ")";
+		break;
+	case 0x36: // {ld (ix+d), d8}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		mRes = memory->getByte(*addr, &b2);
+		*addr += 1;
+		s = s + "LD (" + prefix + "+ " + decToHexByte(b1) + "), " + decToHexByte(b2);
+		break;
+	case 0x39: // {add ix, sp}
+		s = s + "ADD " + prefix + ", SP";
+		break;
+	case 0x3C: // {inc a}
+		s = s + "INC A";
+		break;
+	case 0x3D: // {dec a}
+		s = s + "DEC A";
+		break;
+	case 0x3E: // {ld a,b1}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD A, " + decToHexByte(b1);
+		break;
+	case 0x40: // {ld b,b}
+		s = s + "LD B, B";
+		break;
+	case 0x41: // {ld b,c}
+		s = s + "LD B, C";
+		break;
+	case 0x42: // {ld b,d}
+		s = s + "LD B, D";
+		break;
+	case 0x43: // {ld b,e}
+		s = s + "LD B, E";
+		break;
+	case 0x44: // {ld b,ixh}
+		s = s + "LD B, " + prefix + "H";
+		break;
+	case 0x45: // {ld b,ixl}
+		s = s + "LD B, " + prefix + "L";
+		break;
+	case 0x46: // {ld b,(ix+d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD B, (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0x47: // {ld b,a}
+		s = s + "LD B, A";
+		break;
+	case 0x48: // {ld c,b}
+		s = s + "LD C, B";
+		break;
+	case 0x49: // {ld c,c}
+		s = s + "LD C, C";
+		break;
+	case 0x4A: // {ld c,d}
+		s = s + "LD C, D";
+		break;
+	case 0x4B: // {ld c,e}
+		s = s + "LD C, E";
+		break;
+	case 0x4C: // {ld c,ixh}
+		s = s + "LD C, " + prefix + "H";
+		break;
+	case 0x4D: // {ld c,ixl}
+		s = s + "LD C, " + prefix + "L";
+		break;
+	case 0x4E: // {ld c,(ix+d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD C, (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0x4F: // {ld c,a}
+		s = s + "LD C, A";
+		break;
+	case 0x50: // {ld d,b}
+		s = s + "LD D, B";
+		break;
+	case 0x51: // {ld d,c}
+		s = s + "LD D, C";
+		break;
+	case 0x52: // {ld d,d}
+		s = s + "LD D, D";
+		break;
+	case 0x53: // {ld d,e}
+		s = s + "LD D, E";
+		break;
+	case 0x54: // {ld d,ixh}
+		s = s + "LD D, " + prefix + "H";
+		break;
+	case 0x55: // {ld d,ixl}
+		s = s + "LD D, " + prefix + "L";
+		break;
+	case 0x56: // {ld d,(ix + d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD D, (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0x57: // {ld d,a}
+		s = s + "LD D, A";
+		break;
+	case 0x58: // {ld e,b}
+		s = s + "LD E, B";
+		break;
+	case 0x59: // {ld e,c}
+		s = s + "LD E, C";
+		break;
+	case 0x5A: // {ld e,d}
+		s = s + "LD E, D";
+		break;
+	case 0x5B: // {ld e,e}
+		s = s + "LD E, E";
+		break;
+	case 0x5C: // {ld e,ixh}
+		s = s + "LD E, " + prefix + "H";
+		break;
+	case 0x5D: // {ld e,ixl}
+		s = s + "LD E, " + prefix + "L";
+		break;
+	case 0x5E: // {ld e,(ix + d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD E, (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0x5F: // {ld e,a}
+		s = s + "LD E, A";
+		break;
+	case 0x60: // {ld ixh,b}
+		s = s + "LD " + prefix + "H, B";
+		break;
+	case 0x61: // {ld ixh,c}
+		s = s + "LD " + prefix + "H, C";
+		break;
+	case 0x62: // {ld ixh,d}
+		s = s + "LD " + prefix + "H, D";
+		break;
+	case 0x63: // {ld ixh,e}
+		s = s + "LD " + prefix + "H, E";
+		break;
+	case 0x64: // {ld ixh,ixh}
+		s = s + "LD " + prefix + "H, " + prefix + "H";
+		break;
+	case 0x65: // {ld ixh,ixl}
+		s = s + "LD " + prefix + "H, " + prefix + "L";
+		break;
+	case 0x66: // {ld h,(ix + d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD H, (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0x67: // {ld ixh,a}
+		s = s + "LD " + prefix + "H, A";
+		break;
+	case 0x68: // {ld ixl,b}
+		s = s + "LD " + prefix + "L, B";
+		break;
+	case 0x69: // {ld ixl,c}
+		s = s + "LD " + prefix + "L, C";
+		break;
+	case 0x6A: // {ld ixl,d}
+		s = s + "LD " + prefix + "L, D";
+		break;
+	case 0x6B: // {ld ixl,e}
+		s = s + "LD " + prefix + "L, E";
+		break;
+	case 0x6C: // {ld ixl,ixh}
+		s = s + "LD " + prefix + "L, " + prefix + "H";
+		break;
+	case 0x6D: // {ld ixl,ixl}
+		s = s + "LD " + prefix + "L, " + prefix + "L";
+		break;
+	case 0x6E: // {ld l,(ix + d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD L, (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0x6F: // {ld ixl,a}
+		s = s + "LD " + prefix + "L, A";
+		break;
+	case 0x70: // {ld (ix + d),b}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD (" + prefix + " + " + decToHexByte(b1) + "), B";
+		break;
+	case 0x71: // {ld (ix + d),c}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD (" + prefix + " + " + decToHexByte(b1) + "), C";
+		break;
+	case 0x72: // {ld (ix + d),d}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD (" + prefix + " + " + decToHexByte(b1) + "), D";
+		break;
+	case 0x73: // {ld (ix + d),e}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD (" + prefix + " + " + decToHexByte(b1) + "), E";
+		break;
+	case 0x74: // {ld (ix + d),h}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD (" + prefix + " + " + decToHexByte(b1) + "), H";
+		break;
+	case 0x75: // {ld (ix + d),l}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD (" + prefix + " + " + decToHexByte(b1) + "), L";
+		break;
+	case 0x77: // ld (ix + d),a}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD (" + prefix + " + " + decToHexByte(b1) + "), A";
+		break;
+	case 0x78: // {ld a,b}
+		s = s + "LD A, B";
+		break;
+	case 0x79: // {ld a,c}
+		s = s + "LD A, C";
+		break;
+	case 0x7A: // {ld a,d}
+		s = s + "LD A, D";
+		break;
+	case 0x7B: // {ld a,e}
+		s = s + "LD A, E";
+		break;
+	case 0x7C: // {ld a,ixh}
+		s = s + "LD A, " + prefix + "H";
+		break;
+	case 0x7D: // {ld a,ixl}
+		s = s + "LD A, " + prefix + "L";
+		break;
+	case 0x7E: // {ld a,(ix + d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "LD A, (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0x7F: // {ld a,a}
+		s = s + "LD A, A";
+		break;
+	case 0x80: // {add a, b}
+		s = s + "ADD A, B";
+		break;
+	case 0x81: // {add a, c}
+		s = s + "ADD A, C";
+		break;
+	case 0x82: // {add a, d}
+		s = s + "ADD A, D";
+		break;
+	case 0x83: // {add a, e}
+		s = s + "ADD A, E";
+		break;
+	case 0x84: // {add a, ixh}
+		s = s + "ADD A, " + prefix + "H";
+		break;
+	case 0x85: // {add a, ixl}
+		s = s + "ADD A, " + prefix + "L";
+		break;
+	case 0x86: // {add a, (ix + d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "ADD A, (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0x87: // {add a, a}
+		s = s + "ADD A, A";
+		break;
+	case 0x88: // {adc a, b}
+		s = s + "ADC A, B";
+		break;
+	case 0x89: // {adc a, c}
+		s = s + "ADC A, C";
+		break;
+	case 0x8A: // {adc a, d}
+		s = s + "ADC A, D";
+		break;
+	case 0x8B: // {adc a, e}
+		s = s + "ADC A, E";
+		break;
+	case 0x8C: // {adc a, ixh}
+		s = s + "ADC A, " + prefix + "H";
+		break;
+	case 0x8D: // {adc a, ixl}
+		s = s + "ADC A, " + prefix + "L";
+		break;
+	case 0x8E: // {adc a, (ix+d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "ADC A, (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0x8F: // {adc a, a}
+		s = s + "ADC A, A";
+		break;
+	case 0x90: // {sub b}
+		s = s + "SUB B";
+		break;
+	case 0x91: // {sub c}
+		s = s + "SUB C";
+		break;
+	case 0x92: // {sub d}
+		s = s + "SUB D";
+		break;
+	case 0x93: // {sub e}
+		s = s + "SUB E";
+		break;
+	case 0x94: // {sub ixh}
+		s = s + "SUB " + prefix + "H";
+		break;
+	case 0x95: // {sub ixl}
+		s = s + "SUB " + prefix + "L";
+		break;
+	case 0x96: // {sub (ix + d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "SUB (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0x97: // {sub a}
+		s = s + "SUB A";
+		break;
+	case 0x98: // {sbc a, b}
+		s = s + "SBC B";
+		break;
+	case 0x99: // {sbc a, c}
+		s = s + "SBC C";
+		break;
+	case 0x9A: // {sbc a, d}
+		s = s + "SBC D";
+		break;
+	case 0x9B: // {sbc a, e}
+		s = s + "SBC E";
+		break;
+	case 0x9C: // {sbc a, ixh}
+		s = s + "SBC " + prefix + "H";
+		break;
+	case 0x9D: // {sbc a, ixl}
+		s = s + "SBC " + prefix + "L";
+		break;
+	case 0x9E: // {sbc a, (ix + d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "SBC (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0x9F: // {sbc a, a}
+		s = s + "SBC A";
+		break;
+	case 0xA0: // {and b}
+		s = s + "AND B";
+		break;
+	case 0xA1: // {and c}
+		s = s + "AND C";
+		break;
+	case 0xA2: // {and d}
+		s = s + "AND D";
+		break;
+	case 0xA3: // {and e}
+		s = s + "AND E";
+		break;
+	case 0xA4: // {and ixh}
+		s = s + "AND " + prefix + "H";
+		break;
+	case 0xA5: // {and ixl}
+		s = s + "AND " + prefix + "L";
+		break;
+	case 0xA6: // {and (ix + d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "AND (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0xA7: // {and a}
+		s = s + "AND A";
+		break;
+	case 0xA8: // {xor b}
+		s = s + "XOR B";
+		break;
+	case 0xA9: // {xor c}
+		s = s + "XOR C";
+		break;
+	case 0xAA: // {xor d}
+		s = s + "XOR D";
+		break;
+	case 0xAB: // {xor e}
+		s = s + "XOR E";
+		break;
+	case 0xAC: // {xor ixh}
+		s = s + "XOR " + prefix + "H";
+		break;
+	case 0xAD: // {xor ixl}
+		s = s + "XOR " + prefix + "L";
+		break;
+	case 0xAE: // {xor (ix + d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "XOR (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0xAF: // {xor a}
+		s = s + "XOR A";
+		break;
+	case 0xB0: // {or b}
+		s = s + "OR B";
+		break;
+	case 0xB1: // {or c}
+		s = s + "OR C";
+		break;
+	case 0xB2: // {or d}
+		s = s + "OR D";
+		break;
+	case 0xB3: // {or e}
+		s = s + "OR E";
+		break;
+	case 0xB4: // {or ixh}
+		s = s + "OR " + prefix + "H";
+		break;
+	case 0xB5: // {or ixl}
+		s = s + "OR " + prefix + "L";
+		break;
+	case 0xB6: // {or (ix + d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "OR (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0xB7: // {or a}
+		s = s + "OR A";
+		break;
+	case 0xB8: // {cp b}
+		s = s + "CP B";
+		break;
+	case 0xB9: // {cp c}
+		s = s + "CP C";
+		break;
+	case 0xBA: // {cp d}
+		s = s + "CP D";
+		break;
+	case 0xBB: // {cp e}
+		s = s + "CP E";
+		break;
+	case 0xBC: // {cp ixh}
+		s = s + "CP " + prefix + "H";
+		break;
+	case 0xBD: // {cp ixl}
+		s = s + "CP " + prefix + "L";
+		break;
+	case 0xBE: // {cp (ix + d)}
+		mRes = memory->getByte(*addr, &b1);
+		*addr += 1;
+		s = s + "CP (" + prefix + " + " + decToHexByte(b1) + ")";
+		break;
+	case 0xBF: // {cp a}
+		s = s + "CP A";
+		break;
+	case 0xCB: // prefix bit operation
+		s = s + bitOpsDasm(addr, isIX, isIY);
+		break;
+	case 0xE1: // {pop ix}
+		s = s + "POP " + prefix;
+		break;
+	case 0xE3: // {ex (sp), ix}
+		s = s + "EX (SP), " + prefix;
+		break;
+	case 0xE5: // {push ix}
+		s = s + "PUSH " + prefix;
+		break;
+	case 0xE9: // {jp (ix)}
+		s = s + "JP (" + prefix + ")";
+		break;
+	case 0xF9: // {ld sp, ix}
+		s = s + "LD SP, " + prefix;
+		break;
+	}
 
 	return s;
 }
-
-std::string z80::iyOpsDasm(uint16_t* addr) {
-	string s = "";
-
-	return s;
-}
-
 
 string z80::dasm(uint16_t* addr)
 {
@@ -2993,10 +4501,10 @@ string z80::dasm(uint16_t* addr)
 	case 0x29: //{ add hl,hl }
 		s = s + "ADD HL, HL";
 		break;
-	case 0x2A: //{ ld (hl), addr }
+	case 0x2A: //{ ld hl, (addr) }
 		mRes = memory->getWord(*addr, &w1);
 		*addr += 2;
-		s = s + "LD (HL)," + decToHexWord(w1);
+		s = s + "LD HL, (" + decToHexWord(w1) + ")";
 		break;
 	case 0x2B: //{ dec hl }
 		s = s + "DEC HL";
@@ -3579,7 +5087,7 @@ string z80::dasm(uint16_t* addr)
 		s = s + "CALL C," + decToHexWord(w1);
 		break;
 	case 0xDD: // {IX ops}
-		s = s + ixOpsDasm(addr);
+		s = s + ixiyOpsDasm(addr, true, false);
 		break;
 	case 0xDE: //{ sbc a,n }
 		mRes = memory->getByte(*addr, &b1);
@@ -3699,7 +5207,7 @@ string z80::dasm(uint16_t* addr)
 		s = s + "CALL M," + decToHexWord(w1);
 		break;
 	case 0xFD: //IY ops
-		s = s + iyOpsDasm(addr);
+		s = s + ixiyOpsDasm(addr, false, true);
 		break;
 	case 0xFE: //{ cp a,n }
 		mRes = memory->getByte(*addr, &b1);
@@ -3791,564 +5299,1153 @@ void z80::SetDebugValue(uint16_t tp, uint16_t num, std::string data) {
 	}
 }
 
-std::string z80::getParam(std::string s, int* n) {
-	std::string res = "";
-	int i = *n;
-	if (i < s.length()) {
-		while (s[i] == ' ' || s[i] == ',')
+
+string z80::delSpace(string data) {
+	string nData = "";
+	int i = 0;
+	if (data[0] == 0x20) {
+		while (data[i] == 0x20)
 		{
 			i++;
-			if (i == s.length()) break;
-		}
-		while (i < s.length())
-		{
-			if ((s[i] >= '0' && s[i] <= '9') || (s[i] >= 'A' && s[i] <= 'Z')) res += s[i]; else break;
-			i++;
+			if (i >= data.length()) break;
 		}
 	}
-	*n = i;
+	while (data[i] != 0x20)
+	{
+		nData += data[i];
+		i++;
+		if (i >= data.length()) return nData;
+	}
+	nData += data[i];
+	i++;
+	while (i < data.length())
+	{
+		if (data[i] != 0x20) nData += data[i];
+		i++;
+	}
+
+	return nData;
+}
+
+string z80::getData(string data, int n) {
+	string inst = "";
+	int i = 0;
+	while (i < data.length()) {
+		if (data[i] == 0x20) break;
+		inst += data[i];
+		i++;
+	}
+	if (n == 1) return inst;
+	i++;
+	inst = "";
+	while (i < data.length()) {
+		if (data[i] == ',') break;
+		inst += data[i];
+		i++;
+		if (i >= data.length()) break;
+	}
+	if (n == 2) return inst;
+	i++;
+	inst = "";
+	while (i < data.length()) {
+		if (data[i] == ',') break;
+		inst += data[i];
+		i++;
+		if (i >= data.length()) break;
+	}
+	if (n == 3) return inst;
+	i++;
+	inst = "";
+	while (i < data.length()) {
+		if (data[i] == ',') break;
+		inst += data[i];
+		i++;
+		if (i >= data.length()) break;
+	}
+	if (n == 4) return inst;
+	return "";
+}
+
+int z80::getParamIndex(string data) {
+	if (data == "B") return 0;
+	if (data == "C") return 1;
+	if (data == "D") return 2;
+	if (data == "E") return 3;
+	if (data == "H") return 4;
+	if (data == "L") return 5;
+	if (data == "(HL)") return 6;
+	if (data == "A") return 7;
+	if (data == "BC") return 8;
+	if (data == "DE") return 9;
+	if (data == "HL") return 10;
+	if (data == "SP") return 11;
+	if (data.find("(IX+", 0) != std::string::npos) return 12;
+	if (data.find("(IY+", 0) != std::string::npos) return 13;
+	if (data == "IX") return 14;
+	if (data == "IY") return 15;
+	if (data == "NZ") return 16;
+	if (data == "Z") return 17;
+	if (data == "NC") return 18;
+	if (data == "C") return 19;
+	if (data == "PO") return 20;
+	if (data == "PE") return 21;
+	if (data == "P") return 22;
+	if (data == "M") return 23;
+	if (data == "(SP)") return 24;
+	if (data == "AF") return 25;
+	if (data == "AF`") return 26;
+	if (data == "(C)") return 27;
+	if (data == "(IX)") return 28;
+	if (data == "(IY)") return 29;
+	if (data == "(BC)") return 30;
+	if (data == "(DE)") return 31;
+	if (data == "I") return 32;
+	if (data == "R") return 33;
+
+	return -1;
+}
+
+int z80::getHexData(string data) {
+	int res = 0;
+	for (int i = 0; i < data.length(); i++) {
+		if ((data[i] >= '0' && data[i] <= '9') || (data[i] >= 'A' && data[i] <= 'F')) {
+			uint8_t p = 0;
+			if (data[i] >= 'A') p = data[i] - 55; else p = data[i] - 48;
+			res = ((res << 4) | p);
+		}
+		else return -1;
+	}
 	return res;
 }
 
-uint8_t z80::GetIdRegsToName(std::string n) {
-	if (n == "A") return 7;
-	if (n == "B") return 0;
-	if (n == "C") return 1;
-	if (n == "D") return 2;
-	if (n == "E") return 3;
-	if (n == "H") return 4;
-	if (n == "L") return 5;
-	if (n == "M") return 6;
-	return 255;
+int z80::getIndexData(string data) {
+	string p = "";
+	for (int i = 4; i < data.length(); i++) {
+		if (data[i] == ')') break;
+		p += data[i];
+	}
+	return getHexData(p);
 }
 
-uint8_t z80::GetIdRegsPairToName(std::string n) {
-	if (n == "B") return 0x00;
-	if (n == "D") return 0x10;
-	if (n == "H") return 0x20;
-	if (n == "SP") return 0x30;
-	if (n == "PSW") return 0x30;
-	return 255;
+int z80::getMemoryData(string data) {
+	string p = "";
+	if (data[0] == '(') {
+		for (int i = 1; i < data.length(); i++) {
+			if (data[i] == ')') break;
+			p += data[i];
+		}
+		return getHexData(p);
+	}
+	else return 0;
 }
+
 
 void z80::SetAssemblerValue(std::string addr, std::string value) {
+	int res = 0;
+	uint8_t buf[5];
 
 	uint16_t dAddr = hexToDec(addr);
 	printf("Use address: %d\n", dAddr);
 
 	for (auto& c : value) c = toupper(c);
 	printf("new value: %s\n", value.c_str());
+	
+	if (!value.length()) return;
 
-	uint8_t paramCount = 1;
-	for (int i = 0; i < value.length(); i++) if (value[i] == ' ' || value[i] == ',') paramCount++;
-	printf("Params count: %d\n", paramCount);
+	std::string cmd = delSpace(value);
+	//printf("%s\n", cmd.c_str());
+	string inst = getData(cmd, 1);
+	//printf("%s\n", inst.c_str());
+	string p1 = getData(cmd, 2);
+	string p2 = getData(cmd, 3);
+	string p3 = getData(cmd, 4);
+	//printf("%s\n", p1.c_str());
+	//printf("%s\n", p2.c_str());
+	//printf("%s\n", p3.c_str());
 
-	std::string cmd = "";
-	int i = 0;
-	while (i < value.length())
-	{
-		if (value[i] == ' ') break;
-		cmd += value[i];
-		i++;
-	}
-	printf("Instruction: %s\n", cmd.c_str());
 
-	if (cmd == "ADD") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsToName(p1);
-		if (rid != 255) {
-			memory->setDebugByte(dAddr, 0x80 | rid);
-		}
-	}
-	if (cmd == "ADI") {
-		std::string p1 = getParam(value, &i);
-		uint8_t dta8 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xC6);
-		memory->setDebugByte(dAddr + 1, dta8);
-	}
-	if (cmd == "ADC") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsToName(p1);
-		if (rid != 255) {
-			memory->setDebugByte(dAddr, 0x88 | rid);
-		}
-	}
-	if (cmd == "ACI") {
-		std::string p1 = getParam(value, &i);
-		uint8_t dta8 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xCE);
-		memory->setDebugByte(dAddr + 1, dta8);
-	}
-	if (cmd == "ANA") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsToName(p1);
-		if (rid != 255) {
-			memory->setDebugByte(dAddr, 0xA0 | rid);
-		}
-	}
-	if (cmd == "ANI") {
-		std::string p1 = getParam(value, &i);
-		uint8_t dta8 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xE6);
-		memory->setDebugByte(dAddr + 1, dta8);
-	}
-	if (cmd == "CALL") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xCD);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "CZ") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xCC);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "CNZ") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xC4);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "CP") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xF4);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "CM") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xFC);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "CC") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xDC);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "CNC") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xD4);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "CPE") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xEC);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "CPO") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xE4);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "CMA") {
-		memory->setDebugByte(dAddr, 0x2F);
-	}
-	if (cmd == "CMC") {
-		memory->setDebugByte(dAddr, 0x3F);
-	}
-	if (cmd == "CMP") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsToName(p1);
-		if (rid != 255) {
-			memory->setDebugByte(dAddr, 0xB8 | rid);
-		}
-	}
-	if (cmd == "CPI") {
-		std::string p1 = getParam(value, &i);
-		uint8_t dta8 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xFE);
-		memory->setDebugByte(dAddr + 1, dta8);
-	}
-	if (cmd == "DAA") {
-		memory->setDebugByte(dAddr, 0x27);
-	}
-	if (cmd == "DAD") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsPairToName(p1);
-		if (rid != 255) {
-			memory->setDebugByte(dAddr, 0x09 | rid);
-		}
-	}
-	if (cmd == "DCR") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsToName(p1);
-		switch (rid)
-		{
-		case 0:	memory->setDebugByte(dAddr, 0x05);
-			break;
-		case 1:	memory->setDebugByte(dAddr, 0x0D);
-			break;
-		case 2:	memory->setDebugByte(dAddr, 0x15);
-			break;
-		case 3:	memory->setDebugByte(dAddr, 0x1D);
-			break;
-		case 4:	memory->setDebugByte(dAddr, 0x25);
-			break;
-		case 5:	memory->setDebugByte(dAddr, 0x2D);
-			break;
-		case 6:	memory->setDebugByte(dAddr, 0x35);
-			break;
-		case 7:	memory->setDebugByte(dAddr, 0x3D);
-			break;
-		default:
-			break;
-		}
-	}
-	if (cmd == "DCX") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsPairToName(p1);
-		if (rid != 255) {
-			memory->setDebugByte(dAddr, 0x0B | rid);
-		}
-	}
-	if (cmd == "DI") {
-		memory->setDebugByte(dAddr, 0xF3);
-	}
-	if (cmd == "EI") {
-		memory->setDebugByte(dAddr, 0xFB);
-	}
-	if (cmd == "HLT") {
-		memory->setDebugByte(dAddr, 0x76);
-	}
-	if (cmd == "IN") {
-		std::string p1 = getParam(value, &i);
-		uint8_t dta8 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xDB);
-		memory->setDebugByte(dAddr + 1, dta8);
-	}
-	if (cmd == "INR") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsToName(p1);
-		switch (rid)
-		{
-		case 0:	memory->setDebugByte(dAddr, 0x04);
-			break;
-		case 1:	memory->setDebugByte(dAddr, 0x0C);
-			break;
-		case 2:	memory->setDebugByte(dAddr, 0x14);
-			break;
-		case 3:	memory->setDebugByte(dAddr, 0x1C);
-			break;
-		case 4:	memory->setDebugByte(dAddr, 0x24);
-			break;
-		case 5:	memory->setDebugByte(dAddr, 0x2C);
-			break;
-		case 6:	memory->setDebugByte(dAddr, 0x34);
-			break;
-		case 7:	memory->setDebugByte(dAddr, 0x3C);
-			break;
-		default:
-			break;
-		}
-	}
-	if (cmd == "INX") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsPairToName(p1);
-		if (rid != 255) {
-			memory->setDebugByte(dAddr, 0x03 | rid);
-		}
-	}
-	if (cmd == "JMP") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xC3);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "JZ") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xCA);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "JNZ") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xC2);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "JP") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xF2);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "JM") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xFA);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "JC") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xDA);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "JNC") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xD2);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "JPE") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xEA);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "JPO") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xE2);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "LDA") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0x3A);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "LDAX") {
-		std::string p1 = getParam(value, &i);
-		if (p1 == "B") memory->setDebugByte(dAddr, 0x0A);
-		if (p1 == "D") memory->setDebugByte(dAddr, 0x1A);
-	}
-	if (cmd == "LHLD") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0x2A);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "LXI") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsPairToName(p1);
-		std::string p2 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p2);
-		if (rid != 255) {
-			if (rid != 0x10) {
-				memory->setDebugByte(dAddr, 0x01 | rid);
-				memory->setDebugWord(dAddr + 1, dta16);
+	if (inst == "ADC") {
+		//printf("Found adc command\n");
+		if (p1 != "" && p2 != "") {
+			int pi1 = getParamIndex(p1);
+			int pi2 = getParamIndex(p2);
+			if (pi1 == 7 && pi2 >= 0 && pi2 < 8) {
+				buf[res++] = 0x88 | pi2;
+			}
+			if (pi1 == 7 && (pi2 == -1 || pi2 == 8 || pi2 == 9)) {
+				int p = getHexData(p2);
+				if (p >= 0 && p < 256) {
+					buf[res++] = 0xCE;
+					buf[res++] = p;
+				}
+			}
+			if (pi1 == 7 && (pi2 == 12 || pi2 == 13)) {
+				int p = getIndexData(p2);
+				if (p >= 0 && p < 256) {
+					if (pi2 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+					buf[res++] = 0x8E;
+					buf[res++] = p;
+				}
+			}
+			if (pi1 == 10 && pi2 >= 8 && pi2 <= 11) {
+				buf[res++] = 0xED;
+				buf[res++] = 0x40 | ((pi2 - 8) << 4) | 0x0A;
 			}
 		}
 	}
-	if (cmd == "MOV") {
-		std::string p1 = getParam(value, &i);
-		uint8_t ridd = GetIdRegsToName(p1);
-		std::string p2 = getParam(value, &i);
-		uint8_t rids = GetIdRegsToName(p2);
-		if (ridd != 255 && rids != 255) {
-			if (ridd != 6 && rids != 6) {
-				memory->setDebugByte(dAddr, 0x40 | (ridd << 3) | (rids));
+	if (inst == "ADD") {
+		if (p1 != "" && p2 != "") {
+			int pi1 = getParamIndex(p1);
+			int pi2 = getParamIndex(p2);
+			if (pi1 == 7 && pi2 >= 0 && pi2 < 8) {
+				buf[res++] = 0x80 | pi2;
+			}
+			if (pi1 == 7 && (pi2 == -1 || pi2 == 8 || pi2 == 9)) {
+				int p = getHexData(p2);
+				if (p >= 0 && p < 256) {
+					buf[res++] = 0xC6;
+					buf[res++] = p;
+				}
+			}
+			if (pi1 == 7 && (pi2 == 12 || pi2 == 13)) {
+				int p = getIndexData(p2);
+				if (p >= 0 && p < 256) {
+					if (pi2 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+					buf[res++] = 0x86;
+					buf[res++] = p;
+				}
+			}
+			if (pi1 == 10 && pi2 >= 8 && pi2 <= 11) {
+				buf[res++] = ((pi2 - 8) << 4) | 0x09;
+			}
+			if (!((pi1 == 14 && pi2 == 15) || (pi1 == 15 && pi2 == 14))) {
+				if ((pi1 == 14 || pi1 == 15) && ((pi2 >= 8 && pi2 <= 11 && pi2 != 10) || (pi2 == 14 || pi2 == 15))) {
+					if (pi1 == 14) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+					if (pi2 == 14) pi2 -= 4;
+					if (pi2 == 15) pi2 -= 5;
+					buf[res++] = ((pi2 - 8) << 4) | 0x09;
+				}
 			}
 		}
 	}
-	if (cmd == "MVI") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsToName(p1);
-		std::string p2 = getParam(value, &i);
-		uint8_t dta8 = hexToDec(p2);
-		if (rid != 255) {
-			switch (rid)
-			{
-			case 0:	memory->setDebugByte(dAddr, 0x06);
-				break;
-			case 1:	memory->setDebugByte(dAddr, 0x0E);
-				break;
-			case 2:	memory->setDebugByte(dAddr, 0x16);
-				break;
-			case 3:	memory->setDebugByte(dAddr, 0x1E);
-				break;
-			case 4:	memory->setDebugByte(dAddr, 0x26);
-				break;
-			case 5:	memory->setDebugByte(dAddr, 0x2E);
-				break;
-			case 6:	memory->setDebugByte(dAddr, 0x36);
-				break;
-			case 7:	memory->setDebugByte(dAddr, 0x3E);
-				break;
-			default:
-				break;
+	if (inst == "AND") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = 0xA0 | pi1;
 			}
-			memory->setDebugByte(dAddr + 1, dta8);
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xA6;
+				buf[res++] = p;
+			}
+			if (pi1 == -1 || pi1 == 8 || pi1 == 9) {
+				int p = getHexData(p1);
+				if (p >= 0 && p < 256) {
+					buf[res++] = 0xE6;
+					buf[res++] = p;
+				}
+			}
 		}
 	}
-	if (cmd == "NOP") {
-		memory->setDebugByte(dAddr, 0x00);
-	}
-	if (cmd == "ORA") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsToName(p1);
-		if (rid != 255) {
-			memory->setDebugByte(dAddr, 0xB0 | rid);
+	if (inst == "BIT") {
+		if (p1 != "" && p2 != "") {
+			int pi1 = getParamIndex(p1);
+			int pi2 = getParamIndex(p2);
+			if (pi1 == -1) {
+				int p = getHexData(p1);
+				if (p >= 0 && p <= 7) {
+					if (pi2 >= 0 && pi2 <= 7) {
+						buf[res++] = 0xCB;
+						buf[res++] = 0x40 | (p << 3) | pi2;
+					}
+					if (pi2 == 12 || pi2 == 13) {
+						if (pi2 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+						buf[res++] = 0xCB;
+						int pp = getIndexData(p2);
+						buf[res++] = pp;
+						buf[res++] = 0x40 | (p << 3) | 0x06;
+					}
+				}
+			}
+
 		}
 	}
-	if (cmd == "ORI") {
-		std::string p1 = getParam(value, &i);
-		uint8_t dta8 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xF6);
-		memory->setDebugByte(dAddr + 1, dta8);
-	}
-	if (cmd == "OUT") {
-		std::string p1 = getParam(value, &i);
-		uint8_t dta8 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xD3);
-		memory->setDebugByte(dAddr + 1, dta8);
-	}
-	if (cmd == "PCHL") {
-		memory->setDebugByte(dAddr, 0xE9);
-	}
-	if (cmd == "POP") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsPairToName(p1);
-		if (rid != 255) {
-			memory->setDebugByte(dAddr, 0xC1 | rid);
+	if (inst == "CALL") {
+		if (p1 != "" && p2 != "") {
+			int pi1 = getParamIndex(p1);
+			int pi2 = getParamIndex(p2);
+			if ((pi1 >= 16 && pi1 <= 23) || pi1 == 1) {
+				if (pi1 == 1) pi1 = 19; else pi1 -= 16;
+				if (pi2 == -1) {
+					int p = getHexData(p2);
+					if (p >= 0 && p <= 0xFFFF) {
+						buf[res++] = 0xC0 | (pi1 << 3) | 0x04;
+						buf[res++] = p & 0xFF;
+						buf[res++] = (p & 0xFF00) >> 8;
+					}
+				}
+			}
+		}
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 == -1) {
+				int p = getHexData(p1);
+				if (p >= 0 && p <= 0xFFFF) {
+					buf[res++] = 0xCD;
+					buf[res++] = p & 0xFF;
+					buf[res++] = (p & 0xFF00) >> 8;
+				}
+			}
 		}
 	}
-	if (cmd == "PUSH") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsPairToName(p1);
-		if (rid != 255) {
-			memory->setDebugByte(dAddr, 0xC5 | rid);
+	if (inst == "CCF") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0x3F;
 		}
 	}
-	if (cmd == "RAL") {
-		memory->setDebugByte(dAddr, 0x17);
-	}
-	if (cmd == "RAR") {
-		memory->setDebugByte(dAddr, 0x1F);
-	}
-	if (cmd == "RLC") {
-		memory->setDebugByte(dAddr, 0x07);
-	}
-	if (cmd == "RRC") {
-		memory->setDebugByte(dAddr, 0x0F);
-	}
-	if (cmd == "RET") {
-		memory->setDebugByte(dAddr, 0xC9);
-	}
-	if (cmd == "RZ") {
-		memory->setDebugByte(dAddr, 0xC8);
-	}
-	if (cmd == "RNZ") {
-		memory->setDebugByte(dAddr, 0xC0);
-	}
-	if (cmd == "RP") {
-		memory->setDebugByte(dAddr, 0xF0);
-	}
-	if (cmd == "RM") {
-		memory->setDebugByte(dAddr, 0xF8);
-	}
-	if (cmd == "RC") {
-		memory->setDebugByte(dAddr, 0xD8);
-	}
-	if (cmd == "RNC") {
-		memory->setDebugByte(dAddr, 0xD0);
-	}
-	if (cmd == "RPE") {
-		memory->setDebugByte(dAddr, 0xE8);
-	}
-	if (cmd == "RPO") {
-		memory->setDebugByte(dAddr, 0xE0);
-	}
-	if (cmd == "RST") {
-		std::string p1 = getParam(value, &i);
-		uint8_t dta8 = hexToDec(p1);
-		switch (dta8)
-		{
-		case 0:	memory->setDebugByte(dAddr, 0xC7);
-			break;
-		case 1:	memory->setDebugByte(dAddr, 0xCF);
-			break;
-		case 2:	memory->setDebugByte(dAddr, 0xD7);
-			break;
-		case 3:	memory->setDebugByte(dAddr, 0xDF);
-			break;
-		case 4:	memory->setDebugByte(dAddr, 0xE7);
-			break;
-		case 5:	memory->setDebugByte(dAddr, 0xEF);
-			break;
-		case 6:	memory->setDebugByte(dAddr, 0xF7);
-			break;
-		case 7:	memory->setDebugByte(dAddr, 0xFF);
-			break;
-		default:
-			break;
+	if (inst == "CP") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = 0xB8 | pi1;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xBE;
+				buf[res++] = p;
+			}
+			if (pi1 == -1 || pi1 == 8 || pi1 == 9) {
+				int p = getHexData(p1);
+				if (p >= 0 && p < 256) {
+					buf[res++] = 0xFE;
+					buf[res++] = p;
+				}
+			}
 		}
 	}
-	if (cmd == "SPHL") {
-		memory->setDebugByte(dAddr, 0xF9);
-	}
-	if (cmd == "SHLD") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0x22);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "STA") {
-		std::string p1 = getParam(value, &i);
-		uint16_t dta16 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0x32);
-		memory->setDebugWord(dAddr + 1, dta16);
-	}
-	if (cmd == "STAX") {
-		std::string p1 = getParam(value, &i);
-		if (p1 == "B") memory->setDebugByte(dAddr, 0x02);
-		if (p1 == "D") memory->setDebugByte(dAddr, 0x12);
-	}
-	if (cmd == "STC") {
-		memory->setDebugByte(dAddr, 0x37);
-	}
-	if (cmd == "SUB") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsToName(p1);
-		if (rid != 255) {
-			memory->setDebugByte(dAddr, 0x90 | rid);
+	if (inst == "CPD") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xA9;
 		}
 	}
-	if (cmd == "SUI") {
-		std::string p1 = getParam(value, &i);
-		uint8_t dta8 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xD6);
-		memory->setDebugByte(dAddr + 1, dta8);
-	}
-	if (cmd == "SBB") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsToName(p1);
-		if (rid != 255) {
-			memory->setDebugByte(dAddr, 0x98 | rid);
+	if (inst == "CPDR") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xB9;
 		}
 	}
-	if (cmd == "SBI") {
-		std::string p1 = getParam(value, &i);
-		uint8_t dta8 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xDE);
-		memory->setDebugByte(dAddr + 1, dta8);
-	}
-	if (cmd == "XCHG") {
-		memory->setDebugByte(dAddr, 0xEB);
-	}
-	if (cmd == "XTHL") {
-		memory->setDebugByte(dAddr, 0xE3);
-	}
-	if (cmd == "XRA") {
-		std::string p1 = getParam(value, &i);
-		uint8_t rid = GetIdRegsToName(p1);
-		if (rid != 255) {
-			memory->setDebugByte(dAddr, 0xA8 | rid);
+	if (inst == "CPI") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xA1;
 		}
 	}
-	if (cmd == "XRI") {
-		std::string p1 = getParam(value, &i);
-		uint8_t dta8 = hexToDec(p1);
-		memory->setDebugByte(dAddr, 0xEE);
-		memory->setDebugByte(dAddr + 1, dta8);
+	if (inst == "CPIR") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xB1;
+		}
 	}
+	if (inst == "CPL") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0x2F;
+		}
+	}
+	if (inst == "DAA") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0x27;
+		}
+	}
+	if (inst == "DEC") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = (pi1 << 3) | 0x05;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (p >= 0 && p < 256) {
+					if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+					buf[res++] = 0x35;
+					buf[res++] = p;
+				}
+			}
+			if (pi1 >= 8 && pi1 <= 11) {
+				buf[res++] = ((pi1 - 8) << 4) | 0x0B;
+			}
+			if (pi1 == 14 || pi1 == 15) {
+				if (pi1 == 14) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0x2B;
+			}
+		}
+	}
+	if (inst == "DI") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xF3;
+		}
+	}
+	if (inst == "DJNZ") {
+		if (p1 != "" && p2 == "" && p3 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 == -1 || pi1 == 8 || pi1 == 9) {
+				int p = getHexData(p1);
+				if (p >= 0 && p < 256) {
+					buf[res++] = 0x10;
+					buf[res++] = p;
+				}
+			}
+		}
+	}
+	if (inst == "EI") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xFB;
+		}
+	}
+	if (inst == "EX") {
+		if (p1 != "" && p2 != "") {
+			int pi1 = getParamIndex(p1);
+			int pi2 = getParamIndex(p2);
+			if (pi1 == 9 && pi2 == 10) {
+				buf[res++] = 0xEB;
+			}
+			if (pi1 == 25 && pi2 == 26) {
+				buf[res++] = 0x08;
+			}
+			if (pi1 == 24) {
+				if (pi2 == 10 || pi2 == 14 || pi2 == 15) {
+					if (pi2 == 14) buf[res++] = 0xDD;
+					if (pi2 == 15) buf[res++] = 0xFD;
+					buf[res++] = 0xE3;
+				}
+			}
+		}
+	}
+	if (inst == "EXX") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xD9;
+		}
+	}
+	if (inst == "HALT") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0x76;
+		}
+	}
+	if (inst == "IM") {
+		if (p1 != "" && p2 == "" && p3 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 == -1) {
+				int p = getHexData(p1);
+				if (p >= 0 && p <= 2) {
+					buf[res++] = 0xED;
+					switch (p) {
+					case 0: buf[res++] = 0x46;
+						break;
+					case 1: buf[res++] = 0x56;
+						break;
+					case 2: buf[res++] = 0x5E;
+						break;
+					}
+				}
+			}
+		}
+	}
+	if (inst == "IN") {
+		if (p1 != "" && p2 != "") {
+			int pi1 = getParamIndex(p1);
+			int pi2 = getParamIndex(p2);
+			if (pi1 == 7 && pi2 == -1) {
+				buf[res++] = 0xDB;
+				buf[res++] = getMemoryData(p2);
+			}
+			if (pi1 >= 0 && pi1 <= 7 && pi2 == 27) {
+				buf[res++] = 0xED;
+				buf[res++] = 0x40 | (pi1 << 3);
+			}
+			if (p1 == "F" && pi2 == 27) {
+				buf[res++] = 0xED;
+				buf[res++] = 0x70;
+			}
+		}
+	}
+	if (inst == "INC") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = (pi1 << 3) | 0x04;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (p >= 0 && p < 256) {
+					if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+					buf[res++] = 0x34;
+					buf[res++] = p;
+				}
+			}
+			if (pi1 >= 8 && pi1 <= 11) {
+				buf[res++] = ((pi1 - 8) << 4) | 0x03;
+			}
+			if (pi1 == 14 || pi1 == 15) {
+				if (pi1 == 14) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0x23;
+			}
+		}
+	}
+	if (inst == "IND") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xAA;
+		}
+	}
+	if (inst == "INDR") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xBA;
+		}
+	}
+	if (inst == "INI") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xA2;
+		}
+	}
+	if (inst == "INIR") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xB2;
+		}
+	}
+	if (inst == "JP") {
+		if (p1 != "" && p2 != "") {
+			int pi1 = getParamIndex(p1);
+			int pi2 = getParamIndex(p2);
+			if ((pi1 >= 16 && pi1 <= 23) || pi1 == 1) {
+				if (pi1 == 1) pi1 = 19; else pi1 -= 16;
+				if (pi2 == -1) {
+					int p = getHexData(p2);
+					if (p >= 0 && p <= 0xFFFF) {
+						buf[res++] = 0xC0 | (pi1 << 3) | 0x02;
+						buf[res++] = p & 0xFF;
+						buf[res++] = (p & 0xFF00) >> 8;
+					}
+				}
+			}
+		}
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 == -1) {
+				int p = getHexData(p1);
+				if (p >= 0 && p <= 0xFFFF) {
+					buf[res++] = 0xC3;
+					buf[res++] = p & 0xFF;
+					buf[res++] = (p & 0xFF00) >> 8;
+				}
+			}
+			if (pi1 == 6 || pi1 == 28 || pi1 == 29) {
+				if (pi1 == 28) buf[res++] = 0xDD;
+				if (pi1 == 29) buf[res++] = 0xFD;
+				buf[res++] = 0xE9;
+			}
+		}
+	}
+	if (inst == "JR") {
+		if (p1 != "" && p2 == "" && p3 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 == -1 || pi1 == 8 || pi1 == 9) {
+				int p = getHexData(p1);
+				buf[res++] = 0x18;
+				buf[res++] = p;
+			}
+		}
+		if (p1 != "" && p2 != "" && p3 == "") {
+			int pi1 = getParamIndex(p1);
+			int pi2 = getParamIndex(p2);
+			if (((pi1 >= 16 && pi1 <= 18) || (pi1 == 1)) && (pi2 == -1 || pi2 == 8 || pi2 == 9)) {
+				int p = getHexData(p2);
+				switch (pi1)
+				{
+				case 16: buf[res++] = 0x20;
+					break;
+				case 17: buf[res++] = 0x28;
+					break;
+				case 18: buf[res++] = 0x30;
+					break;
+				case 1: buf[res++] = 0x38;
+					break;
+				}
+				buf[res++] = p;
+			}
+		}
+	}
+	if (inst == "LD") {
+		if (p1 != "" && p2 != "" && p3 == "") {
+			int pi1 = getParamIndex(p1);
+			int pi2 = getParamIndex(p2);
+			if (pi1 >= 0 && pi1 <= 7 && pi2 >= 0 && pi2 <= 7) {
+				buf[res++] = 0x40 | (pi1 << 3) | pi2;
+			}
+			if ((pi1 >= 0 && pi1 <= 7) && (pi2 == -1 || pi2 == 8 || pi2 == 9)) {
+				int p = getHexData(p2);
+				if (p >= 0 && p <= 255 && p2[0] != '(') {
+					buf[res++] = (pi1 << 3) | 0x06;
+					buf[res++] = p;
+				}
+				else {
+					if (pi1 == 7 && p2[0] == '(') {
+						int p = getMemoryData(p2);
+						buf[res++] = 0x3A;
+						buf[res++] = p & 0xFF;
+						buf[res++] = (p & 0xFF00) >> 8;
+					}
+				}
+			}
+			if (pi1 >= 0 && pi1 <= 7 && (pi2 == 12 || pi2 == 13)) {
+				if (pi2 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0x40 | (pi1 << 3) | 0x06;
+				int p = getIndexData(p2);
+				buf[res++] = p;
+			}
+			if (((pi2 >= 0 && pi2 <= 7) || (pi2 == -1 || pi2 == 8 || pi2 == 9)) && (pi1 == 12 || pi1 == 13)) {
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				if ((pi2 >= 0 && pi2 <= 7)) buf[res++] = 0x70 | pi2;
+				if (pi2 == -1 || pi2 == 8 || pi2 == 9) buf[res++] = 0x36;
+				int p = getIndexData(p1);
+				buf[res++] = p;
+				if (pi2 == -1 || pi2 == 8 || pi2 == 9) {
+					int p = getHexData(p2);
+					buf[res++] = p;
+				}
+			}
+			if (pi1 == 7 && (pi2 == 30 || pi2 == 31)) {
+				buf[res++] = 0x0A | ((pi2 - 30) << 4);
+			}
+			if (pi2 == 7 && (pi1 == 30 || pi1 == 31)) {
+				buf[res++] = 0x02 | ((pi1 - 30) << 4);
+			}
+			if (pi1 == -1 && ((pi2 >= 7 && pi2 <= 11) || pi2 == 14 || pi2 == 15)) {
+				int p = getMemoryData(p1);
+				if (pi2 == 7) {
+					buf[res++] = 0x32;
+					buf[res++] = p & 0xFF;
+					buf[res++] = (p & 0xFF00) >> 8;
+				}
+				if (pi2 == 10) {
+					buf[res++] = 0x22;
+					buf[res++] = p & 0xFF;
+					buf[res++] = (p & 0xFF00) >> 8;
+				}
+				if (pi2 == 8 || pi2 == 9 || pi2 == 11) {
+					buf[res++] = 0xED;
+					buf[res++] = 0x40 | ((pi2 - 8) << 4) | 0x03;
+					buf[res++] = p & 0xFF;
+					buf[res++] = (p & 0xFF00) >> 8;
+				}
+				if (pi2 == 14 || pi2 == 15) {
+					if (pi2 == 14) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+					buf[res++] = 0x22;
+					buf[res++] = p & 0xFF;
+					buf[res++] = (p & 0xFF00) >> 8;
+				}
+			}
+			if (pi1 == 7 && (pi2 == 32 || pi2 == 33)) {
+				buf[res++] = 0xED;
+				if (pi2 == 32) buf[res++] = 0x57; else buf[res++] = 0x5F;
+			}
+			if (pi2 == 7 && (pi1 == 32 || pi1 == 33)) {
+				buf[res++] = 0xED;
+				if (pi1 == 32) buf[res++] = 0x47; else buf[res++] = 0x4F;
+			}
+			if (pi1 >= 8 && pi1 <= 11 && pi2 == -1) {
+				if (p2[0] == '(') {
+					int p = getMemoryData(p2);
+					if (pi1 == 10) {
+						buf[res++] = 0x2A;
+						buf[res++] = p & 0xFF;
+						buf[res++] = (p & 0xFF00) >> 8;
+					}
+					else {
+						buf[res++] = 0xED;
+						buf[res++] = 0x40 | ((pi1 - 8) << 4) | 0x0B;
+						buf[res++] = p & 0xFF;
+						buf[res++] = (p & 0xFF00) >> 8;
+					}
+				}
+				else {
+					int p = getHexData(p2);
+					buf[res++] = ((pi1 - 8) << 4) | 0x01;
+					buf[res++] = p & 0xFF;
+					buf[res++] = (p & 0xFF00) >> 8;
+				}
+			}
+			if (pi1 == 11 && pi2 == 10) {
+				buf[res++] = 0xF9;
+			}
+			if (pi1 == 11 && pi2 == 14) {
+				buf[res++] = 0xDD;
+				buf[res++] = 0xF9;
+			}
+			if (pi1 == 11 && pi2 == 15) {
+				buf[res++] = 0xFD;
+				buf[res++] = 0xF9;
+			}
+			if ((pi1 == 14 || pi1 == 15) && pi2 == -1) {
+				if (pi1 == 14) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				if (p2[0] == '(') {
+					int p = getMemoryData(p2);
+					buf[res++] = 0x2A;
+					buf[res++] = p & 0xFF;
+					buf[res++] = (p & 0xFF00) >> 8;
+				}
+				else {
+					int p = getHexData(p2);
+					buf[res++] = 0x21;
+					buf[res++] = p & 0xFF;
+					buf[res++] = (p & 0xFF00) >> 8;
+				}
+			}
+		}
+	}
+	if (inst == "LDD") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xA8;
+		}
+	}
+	if (inst == "LDDR") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xB8;
+		}
+	}
+	if (inst == "LDI") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xA0;
+		}
+	}
+	if (inst == "LDIR") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xB0;
+		}
+	}
+	if (inst == "NEG") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0x44;
+		}
+	}
+	if (inst == "NOP") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0x00;
+		}
+	}
+	if (inst == "OR") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = 0xB0 | pi1;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xB6;
+				buf[res++] = p;
+			}
+			if (pi1 == -1 || pi1 == 8 || pi1 == 9) {
+				int p = getHexData(p1);
+				if (p >= 0 && p < 256) {
+					buf[res++] = 0xF6;
+					buf[res++] = p;
+				}
+			}
+		}
+	}
+	if (inst == "OTDR") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xBB;
+		}
+	}
+	if (inst == "OTIR") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xB3;
+		}
+	}
+	if (inst == "OUT") {
+		if (p1 != "" && p2 != "") {
+			int pi1 = getParamIndex(p1);
+			int pi2 = getParamIndex(p2);
+			if (pi2 == 7 && pi1 == -1) {
+				buf[res++] = 0xD3;
+				buf[res++] = getMemoryData(p1);
+			}
+			if (pi2 >= 0 && pi2 <= 7 && pi1 == 27) {
+				buf[res++] = 0xED;
+				buf[res++] = 0x40 | (pi2 << 3) | 0x01;
+			}
+			if (p2 == "0" && pi1 == 27) {
+				buf[res++] = 0xED;
+				buf[res++] = 0x71;
+			}
+		}
+	}
+	if (inst == "OUTD") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xAB;
+		}
+	}
+	if (inst == "OUTI") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0xA3;
+		}
+	}
+	if (inst == "POP") {
+		if (p1 != "" && p2 == "" && p3 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 8 && pi1 <= 10 || pi1 == 25) {
+				if (pi1 == 25) pi1 = 3; else pi1 -= 8;
+				buf[res++] = 0xC0 | (pi1 << 4) | 0x01;
+			}
+			if (pi1 == 14 || pi1 == 15) {
+				if (pi1 == 14) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xE1;
+			}
+		}
+	}
+	if (inst == "PUSH") {
+		if (p1 != "" && p2 == "" && p3 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 8 && pi1 <= 10 || pi1 == 25) {
+				if (pi1 == 25) pi1 = 3; else pi1 -= 8;
+				buf[res++] = 0xC0 | (pi1 << 4) | 0x05;
+			}
+			if (pi1 == 14 || pi1 == 15) {
+				if (pi1 == 14) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xE5;
+			}
+		}
+	}
+	if (inst == "RES") {
+		if (p1 != "" && p2 != "") {
+			int pi1 = getParamIndex(p1);
+			int pi2 = getParamIndex(p2);
+			if (pi1 == -1) {
+				int p = getHexData(p1);
+				if (p >= 0 && p <= 7) {
+					if (pi2 >= 0 && pi2 <= 7) {
+						buf[res++] = 0xCB;
+						buf[res++] = 0x80 | (p << 3) | pi2;
+					}
+					if (pi2 == 12 || pi2 == 13) {
+						if (pi2 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+						buf[res++] = 0xCB;
+						int pp = getIndexData(p2);
+						buf[res++] = pp;
+						buf[res++] = 0x80 | (p << 3) | 0x06;
+					}
+				}
+			}
+		}
+	}
+	if (inst == "RET") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if ((pi1 >= 16 && pi1 <= 23) || pi1 == 1) {
+				if (pi1 == 1) pi1 = 19; else pi1 -= 16;
+				buf[res++] = 0xC0 | (pi1 << 3);
+			}
+		}
+		if (p1 == "" && p2 == "") {
+			buf[res++] = 0xC9;
+		}
+	}
+	if (inst == "RETI") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0x4D;
+		}
+	}
+	if (inst == "RETN") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0x45;
+		}
+	}
+	if (inst == "RL") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = 0xCB;
+				buf[res++] = 0x10 | pi1;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xCB;
+				buf[res++] = p;
+				buf[res++] = 0x16;
+			}
+		}
+	}
+	if (inst == "RLA") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0x17;
+		}
+	}
+	if (inst == "RLC") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = 0xCB;
+				buf[res++] = pi1;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xCB;
+				buf[res++] = p;
+				buf[res++] = 0x06;
+			}
+		}
+	}
+	if (inst == "RLCA") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0x07;
+		}
+	}
+	if (inst == "RLD") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0x6F;
+		}
+	}
+	if (inst == "RR") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = 0xCB;
+				buf[res++] = 0x18 | pi1;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xCB;
+				buf[res++] = p;
+				buf[res++] = 0x1E;
+			}
+		}
+	}
+	if (inst == "RRA") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0x1F;
+		}
+	}
+	if (inst == "RRC") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = 0xCB;
+				buf[res++] = 0x08 | pi1;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xCB;
+				buf[res++] = p;
+				buf[res++] = 0x0E;
+			}
+		}
+	}
+	if (inst == "RRCA") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0x0F;
+		}
+	}
+	if (inst == "RRD") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0xED;
+			buf[res++] = 0x67;
+		}
+	}
+	if (inst == "RST") {
+		if (p1 != "" && p2 == "" && p3 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 == -1) {
+				int p = getHexData(p1);
+				if (p == 0 || p == 8 || p == 0x10 || p == 0x18 || p == 0x20 || p == 0x28 || p == 0x30 || p == 0x38) {
+					buf[res++] = 0xC7 | p;
+				}
+			}
+		}
+	}
+	if (inst == "SBC") {
+		if (p1 != "" && p2 != "") {
+			int pi1 = getParamIndex(p1);
+			int pi2 = getParamIndex(p2);
+			if (pi1 == 7 && (pi2 >= 0 && pi2 < 8)) {
+				buf[res++] = 0x98 | pi2;
+			}
+			if (pi1 == 7 && (pi2 == -1 || pi2 == 8 || pi2 == 9)) {
+				int p = getHexData(p2);
+				if (p >= 0 && p <= 255) {
+					buf[res++] = 0xDE;
+					buf[res++] = p;
+				}
+			}
+			if (pi1 == 7 && (pi2 == 12 || pi2 == 13)) {
+				int p = getIndexData(p2);
+				if (pi2 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0x9E;
+				buf[res++] = p;
+			}
+			if (pi1 == 10 && pi2 >= 8 && pi2 <= 11) {
+				buf[res++] = 0xED;
+				buf[res++] = 0x40 | ((pi2 - 8) << 4) | 0x02;
+			}
+		}
+	}
+	if (inst == "SCF") {
+		if (p1 == "" && p2 == "" && p3 == "") {
+			buf[res++] = 0x37;
+		}
+	}
+	if (inst == "SET") {
+		if (p1 != "" && p2 != "") {
+			int pi1 = getParamIndex(p1);
+			int pi2 = getParamIndex(p2);
+			if (pi1 == -1) {
+				int p = getHexData(p1);
+				if (p >= 0 && p <= 7) {
+					if (pi2 >= 0 && pi2 <= 7) {
+						buf[res++] = 0xCB;
+						buf[res++] = 0xC0 | (p << 3) | pi2;
+					}
+					if (pi2 == 12 || pi2 == 13) {
+						if (pi2 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+						buf[res++] = 0xCB;
+						int pp = getIndexData(p2);
+						buf[res++] = pp;
+						buf[res++] = 0xC0 | (p << 3) | 0x06;
+					}
+				}
+			}
+		}
+	}
+	if (inst == "SLA") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = 0xCB;
+				buf[res++] = 0x20 | pi1;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xCB;
+				buf[res++] = p;
+				buf[res++] = 0x26;
+			}
+		}
+	}
+	if (inst == "SLL") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = 0xCB;
+				buf[res++] = 0x30 | pi1;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xCB;
+				buf[res++] = p;
+				buf[res++] = 0x36;
+			}
+		}
+	}
+	if (inst == "SRA") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = 0xCB;
+				buf[res++] = 0x28 | pi1;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xCB;
+				buf[res++] = p;
+				buf[res++] = 0x2E;
+			}
+		}
+	}
+	if (inst == "SRL") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = 0xCB;
+				buf[res++] = 0x38 | pi1;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xCB;
+				buf[res++] = p;
+				buf[res++] = 0x3E;
+			}
+		}
+	}
+	if (inst == "SUB") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = 0x90 | pi1;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0x96;
+				buf[res++] = p;
+			}
+			if (pi1 == -1 || pi1 == 8 || pi1 == 9) {
+				int p = getHexData(p1);
+				if (p >= 0 && p < 256) {
+					buf[res++] = 0xD6;
+					buf[res++] = p;
+				}
+			}
+		}
+	}
+	if (inst == "XOR") {
+		if (p1 != "" && p2 == "") {
+			int pi1 = getParamIndex(p1);
+			if (pi1 >= 0 && pi1 < 8) {
+				buf[res++] = 0xA8 | pi1;
+			}
+			if (pi1 == 12 || pi1 == 13) {
+				int p = getIndexData(p1);
+				if (pi1 == 12) buf[res++] = 0xDD; else buf[res++] = 0xFD;
+				buf[res++] = 0xAE;
+				buf[res++] = p;
+			}
+			if (pi1 == -1 || pi1 == 8 || pi1 == 9) {
+				int p = getHexData(p1);
+				if (p >= 0 && p < 256) {
+					buf[res++] = 0xEE;
+					buf[res++] = p;
+				}
+			}
+		}
+	}
+	
+	for (int i=0;i<res;i++) memory->setDebugByte(dAddr+i, buf[i]);
 }
 
 void z80::setPort(uint16_t num, Ports* dev) {

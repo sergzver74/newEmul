@@ -155,6 +155,7 @@
     <ClCompile Include="gui.cpp" />
     <ClCompile Include="hex.cpp" />
     <ClCompile Include="i8080.cpp" />
+    <ClCompile Include="ide.cpp" />
     <ClCompile Include="k1801vm1.cpp" />
     <ClCompile Include="k1818vg93.cpp" />
     <ClCompile Include="k580vi53.cpp" />
@@ -164,6 +165,7 @@
     <ClCompile Include="memory.cpp" />
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="openDialog.cpp" />
+    <ClCompile Include="radio86rk.cpp" />
     <ClCompile Include="resampler.cpp" />
     <ClCompile Include="sound.cpp" />
     <ClCompile Include="tapeplayer.cpp" />
@@ -189,6 +191,7 @@
     <ClInclude Include="gui.h" />
     <ClInclude Include="hex.h" />
     <ClInclude Include="i8080.h" />
+    <ClInclude Include="ide.h" />
     <ClInclude Include="interp.h" />
     <ClInclude Include="k1801vm1.h" />
     <ClInclude Include="k1818vg93.h" />
@@ -200,6 +203,7 @@
     <ClInclude Include="menu.h" />
     <ClInclude Include="openDialog.h" />
     <ClInclude Include="ports.h" />
+    <ClInclude Include="radio86rk.h" />
     <ClInclude Include="resampler.h" />
     <ClInclude Include="sound.h" />
     <ClInclude Include="tapeplayer.h" />

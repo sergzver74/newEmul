@@ -4,7 +4,10 @@
 
 #include <SDL.h>
 #include <functional>
+
 #include "vector06c.h"
+#include "radio86rk.h"
+
 #include "graph.h"
 #include "fonts.h"
 #include "gui.h"
@@ -190,6 +193,17 @@ int main(int argc, char* args[]) {
 		if (!cfg.debugMode) globalMachine->start(0);
 	}
 	
+	if (cfg.profiles[cfg.numProfile].profileName == "radio86rk") {
+		wav = new WAV(1780000);
+
+		/*
+		Radio86rk* radio86rk;
+		radio86rk = new Radio86rk(renderer, updateMainWindow, wav, cfg.profiles[cfg.numProfile], breakPoints);
+		globalMachine = radio86rk;
+		if (!cfg.debugMode) globalMachine->start(0);
+		*/
+	}
+
 	bool updated = false;
 	bool eventRes = false;
 	while (1) {

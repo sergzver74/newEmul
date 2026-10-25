@@ -160,6 +160,13 @@ Vector06c::Vector06c(SDL_Renderer* rendr, std::function<void(SDL_Renderer* rende
 			cpu->setPort(fddPorts.ports[i], fddController);
 		}
 	}
+	if (prof.hddPresent) {
+		ideController = new IDE(prof.hdd);
+		tPorts hddPorts = ideController->getPorts();
+		for (int i = 0; i < hddPorts.count; i++) {
+			cpu->setPort(hddPorts.ports[i], ideController);
+		}
+	}
 	cpu->reset();
 	clockCount = 0;
 	tickCount = 0;

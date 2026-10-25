@@ -199,13 +199,13 @@ void i8080::summ(uint8_t sl, uint8_t ppp, uint8_t typ)
 	if (typ)
 	{
 		temp = a - sl - ppp;
-		iAC = (((a & 0x08) >> 1) | ((sl & 0x08) >> 2) | ((temp & 0x08) >> 3)) & 0x07;
+		iAC = (((a & 0x08) >> 1) | ((sl & 0x08) >> 2) | (((uint8_t)temp & 0x08) >> 3)) & 0x07;
 		if (subACtable[iAC] == 1) fl &= 0xEF; else fl |= 0x10;
 	}
 	else
 	{
 		temp = a + sl + ppp;
-		iAC = (((a & 0x08) >> 1) | ((sl & 0x08) >> 2) | ((temp & 0x08) >> 3)) & 0x07;
+		iAC = (((a & 0x08) >> 1) | ((sl & 0x08) >> 2) | (((uint8_t)temp & 0x08) >> 3)) & 0x07;
 		if (addACtable[iAC] == 1) fl |= 0x10; else fl &= 0xEF;
 	}
 
@@ -223,7 +223,7 @@ uint8_t i8080::inrdcr(uint8_t sl, uint8_t typ)
 	if (typ)
 	{
 		sl--;
-		if ((sl & 0x0F) == 0x0F) fl &= 0xEF; else fl |= 0x10;
+		if ((sl & 0x0F) == 0x0F) fl |= 0x10; else fl &= 0xEF;
 	}
 	else
 	{
@@ -246,7 +246,7 @@ uint8_t i8080::execute(uint16_t addr) {
 
 uint8_t i8080::execute() {
 	uint16_t addr;
-	uint8_t dopcode, olda, b1;
+	uint8_t dopcode, olda, b1, tmp;
 	uint8_t NumTicks = 0;
 	uint16_t afl;
 
@@ -835,7 +835,6 @@ uint8_t i8080::execute() {
 		NumTicks = 4;
 		break;
 	case 0x86: // {add m}
-		uint8_t tmp;
 		mRes = memory->getByte(hl.r16, &tmp);
 		summ(tmp, 0, 0);
 		NumTicks = 7;
@@ -1459,6 +1458,7 @@ uint8_t i8080::execute() {
 		break;
 	case 0xEA: // {jpe addr}
 		mRes = memory->getWord(pc, &addr);
+		pc += 2;
 		if (((fl & 0x04) >> 2) == 1) pc = addr;
 		NumTicks = 10;
 		break;
@@ -1470,6 +1470,7 @@ uint8_t i8080::execute() {
 		break;
 	case 0xEC: // {cpe addr}
 		mRes = memory->getWord(pc, &addr);
+		pc += 2;
 		if (((fl & 0x04) >> 2) == 1)
 		{
 			sp -= 2;

@@ -14,6 +14,7 @@
 #include "sound.h"
 #include "k580vi53.h"
 #include "k1818vg93.h"
+#include "ide.h"
 #include "kvaz.h"
 #include "vkeyboard.h"
 #include "config.h"
@@ -59,7 +60,7 @@ private:
 	K580VI53* timervi53;
 	kvaz* kvazidisk;
 	K1818VG93 *fddController;
-
+	IDE* ideController;
 	SDL_Renderer* renderer;
 	uint64_t clockCount;
 	uint64_t tickCount;
